@@ -7,7 +7,7 @@ spec:
   version: v1
   metadata:
   - name: schedule
-    value: "@every 30s" # valid cron schedule
+    value: "@every 5s" # valid cron schedule
   - name: direction
     value: "input"
 scopes:

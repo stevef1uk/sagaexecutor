@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
 	dapr "github.com/dapr/go-sdk/client"
@@ -86,6 +87,21 @@ func main() {
 	s.GetAllLogs(client, "mock-client", "test2")
 	//s.GetAllLogs(client, "", "")
 
+	// Now lets happer this a bit
+
+	log.Println("Sending a group of starts & stops")
+	for i := 0; i < 10; i++ {
+		token := uuid.NewString()
+		err = s.SendStart(client, "mock-client", "test2", token, "callback", "{}", 1)
+		if err != nil {
+			log.Printf("First Publish error got %s", err)
+		}
+		err = s.SendStop(client, "mock-client", "test2", token)
+		if err != nil {
+			log.Printf("First Stop publish  error got %s", err)
+		}
+	}
+	log.Println("Finished sending starts & stops")
 	log.Println("Sleepig for a bit to allow time to receive any callbacks")
 	time.Sleep(60 * time.Second)
 

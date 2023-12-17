@@ -46,11 +46,11 @@ func main() {
 	defer client.Close()
 
 	s = service.NewService()
-	log.Println("Sleepig for a bit")
+	log.Println("Sleeping for a bit")
 	time.Sleep(10 * time.Second)
 
 	// Now ensure that the Poller will call us back
-	err = s.SendStart(client, "server-test", "test1", "abcdefgh1235", "callback", "{}", 20)
+	err = s.SendStart(client, "server-test", "test1", "abcdefgh1235", "callback", `{"fred":1}`, 20)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
