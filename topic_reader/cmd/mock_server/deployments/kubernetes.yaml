@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mock-client
+  name: server-test
   labels:
-    app: mock-client
+    app: server-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mock-client
+      app: server-test
     strategy: {}
   template:
     metadata:
       annotations:
-        dapr.io/app-id: mock-client
+        dapr.io/app-id: server-test
         dapr.io/enabled: "true"
-        dapr.io/app-port: "6005"
+        dapr.io/app-port: "6006"
         dapr.io/config: "appconfig"
         dapr.io/enable-api-logging: "true"
       creationTimestamp: null
       labels:
-        app: mock-client
+        app: server-test
     spec:
       containers:
-      - name: mock-client
-        image: seahope/mock-client-go-image
+      - name: server-test
+        image: seahope/saga-server-test-go-image
         env:
         - name: APP_ID
           value: server-test
         - name: APP_CHANNEL_ADDRESS
         - name: APP_PORT
-          value: "6005"
+          value: "6006"
         - name: DAPR_METRICS_PORT
           value: "55215"
         imagePullPolicy: Always

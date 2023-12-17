@@ -159,9 +159,8 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 		if time.Duration.Seconds(elapsed) > float64(allowed_time) {
 			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_url)
-			// remove the sagasubscriber|| string at the front added by Dapr
-			key_actual := res_entry.Key[16:]
-			sendCallback(client, key_actual, log_entry)
+
+			sendCallback(client, res_entry.Key, log_entry)
 		}
 	}
 }
@@ -204,17 +203,20 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 		Data:        data,
 	}
 
-	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key, params)
+	// remove the sagasubscriber|| string at the front added by Dapr
+	key_actual := key[16:]
+
+	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key_actual, params)
 	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_url)
 
 	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_url, "post", content)
 	if err == nil {
 		// Delivered so lets delete the Start record from the Store
-		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		err = client.DeleteState(context.Background(), stateStoreComponentName, key_actual, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("Deleted Log with key:", key)
+		fmt.Println("Deleted Log with key:", key_actual)
 	} else {
 		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.Callback_url, params.App_id, err)
 	}

@@ -91,11 +91,22 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		}
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
+
+		_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
+		if err != nil {
+			fmt.Printf("Error can't find key! %s/n", err)
+		}
+
 		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println("Deleted Log with key:", key)
+		// Double check!
+		_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
+		if err == nil {
+			fmt.Println("Nope key still exists!")
+		}
 
 	}
 

@@ -67,33 +67,27 @@ func main() {
 
 	log.Println("Finished sleeping")
 
-	err = s.SendStart(client, "server-test", "test1", "abcdefg1234", "callback", "{}", 10)
+	err = s.SendStart(client, "mock-client", "test2", "abcdefg1234", "callback", "{}", 60)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
 		log.Println("Successfully pulished first start message")
 	}
+	log.Println("Sleepig for a bit")
+	time.Sleep(30 * time.Second)
 
-	err = s.SendStop(client, "server-test", "test1", "abcdefg1234")
+	err = s.SendStop(client, "mock-client", "test2", "abcdefg1234")
 	if err != nil {
 		log.Printf("First Stop publish  error got %s", err)
 	} else {
 		log.Println("Successfully pulished first stop message")
 	}
 
-	// Now try the read events test
-	err = s.SendStart(client, "server-test", "test2", "abcdefg1237", "callback", "{}", 120)
-	if err != nil {
-		log.Printf("First Publish error got %s", err)
-	} else {
-		log.Println("Successfully pulished second start message")
-	}
-
-	s.GetAllLogs(client, service.PubsubComponentName, "server-test")
-	s.GetAllLogs(client, "", "")
+	s.GetAllLogs(client, "mock-client", "test2")
+	//s.GetAllLogs(client, "", "")
 
 	log.Println("Sleepig for a bit to allow time to receive any callbacks")
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	client.Close()
 

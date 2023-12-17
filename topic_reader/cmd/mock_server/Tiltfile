@@ -5,7 +5,7 @@
 # shows you how to set up a custom workflow that measures it.
 
 
-compile_cmd = 'CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/mock-client app.go'
+compile_cmd = 'CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/server-test app.go'
 
 local_resource(
   'server-test-go-compile',
@@ -13,7 +13,7 @@ local_resource(
   deps=[  '../service/service.go', '../dervice/interface.go'])
 
 docker_build(
-  'seahope/mock-client-go-image',
+  'seahope/saga-server-test-go-image',
   '.',
   dockerfile='deployments/Dockerfile',
   only=[
