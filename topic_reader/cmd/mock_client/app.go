@@ -1,8 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"time"
+
+	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
 
 	dapr "github.com/dapr/go-sdk/client"
 	service "sagaexecctl.sjfisher.com/service"
@@ -10,6 +17,19 @@ import (
 
 var client dapr.Client
 var s service.Server
+
+func callback(w http.ResponseWriter, r *http.Request) {
+	var params service.Start_stop
+	fmt.Printf("Yay callback invoked!\n")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	json.NewDecoder(r.Body).Decode(&params)
+
+	// Here do what is necessary to recover this transaction)
+	fmt.Printf("transaction callback invoked %v\n\n", params)
+	json.NewEncoder(w).Encode("ok")
+}
 
 func main() {
 	var err error
@@ -22,6 +42,16 @@ func main() {
 	  Timeout      int       `json:"timeout"`
 	  Event        bool      `json:"event"`
 	  LogTime      time.Time `json:"logtime"`*/
+
+	appPort := "6000"
+	if value, ok := os.LookupEnv("APP_PORT"); ok {
+		appPort = value
+	}
+	router := mux.NewRouter()
+
+	log.Println("setting up handler")
+	router.HandleFunc("/callback", callback).Methods("POST", "OPTIONS")
+	go http.ListenAndServe(":"+appPort, router)
 
 	log.Println("About to send a couple of messages")
 
@@ -37,14 +67,14 @@ func main() {
 
 	log.Println("Finished sleeping")
 
-	err = s.SendStart(client, service.PubsubComponentName, "serv1", "abcdefg1234", "localhost", "{}", 10)
+	err = s.SendStart(client, "server-test", "test1", "abcdefg1234", "callback", "{}", 10)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
 		log.Println("Successfully pulished first start message")
 	}
 
-	err = s.SendStop(client, service.PubsubComponentName, "serv1", "abcdefg1234")
+	err = s.SendStop(client, "server-test", "test1", "abcdefg1234")
 	if err != nil {
 		log.Printf("First Stop publish  error got %s", err)
 	} else {
@@ -52,15 +82,18 @@ func main() {
 	}
 
 	// Now try the read events test
-	err = s.SendStart(client, service.PubsubComponentName, "serv1", "abcdefg1237", "localhost", "{}", 120)
+	err = s.SendStart(client, "server-test", "test2", "abcdefg1237", "callback", "{}", 120)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
 		log.Println("Successfully pulished second start message")
 	}
 
-	s.GetAllLogs(client, service.PubsubComponentName, "serv1")
+	s.GetAllLogs(client, service.PubsubComponentName, "server-test")
 	s.GetAllLogs(client, "", "")
+
+	log.Println("Sleepig for a bit to allow time to receive any callbacks")
+	time.Sleep(10 * time.Second)
 
 	client.Close()
 

@@ -48,8 +48,8 @@ type service struct {
 func getMapFromString(input string) map[string]string {
 
 	var m map[string]string = make(map[string]string)
-
-	input2 := strings.Replace(input, `"`, ``, -1)
+	// Remove first characacter as this will be the json { othwerwise it forms part of the first key
+	input2 := strings.Replace(input[1:], `"`, ``, -1)
 	//fmt.Printf("input2: %s \n", input2)
 
 	split1 := regexp.MustCompile(",").Split(input2, -1)
@@ -143,10 +143,12 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 			log.Printf("parsed time = %v\n", log_entry.LogTime)
 		}
 
-		log_entry.App_id = mymap["appid"]
+		log_entry.App_id = mymap["app_id"]
+		log.Printf("App_id = %s\n", mymap["app_id"])
 		log_entry.Service = mymap["service"]
 		log_entry.Token = mymap["token"]
 		log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
+		log_entry.Callback_url = mymap["callback_url"]
 		log.Printf("Log Entry reconstructed = %v\n", log_entry)
 
 		elapsed := time.Since(log_entry.LogTime)
@@ -157,6 +159,9 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 		if time.Duration.Seconds(elapsed) > float64(allowed_time) {
 			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_url)
+			// remove the sagasubscriber|| string at the front added by Dapr
+			key_actual := res_entry.Key[16:]
+			sendCallback(client, key_actual, log_entry)
 		}
 	}
 }
@@ -189,4 +194,29 @@ func callHasura(app_id string, service string) []State {
 	}
 
 	return res.SagaLogs
+}
+
+func sendCallback(client dapr.Client, key string, params Start_stop) {
+
+	data, _ := json.Marshal(params)
+	content := &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        data,
+	}
+
+	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key, params)
+	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_url)
+
+	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_url, "post", content)
+	if err == nil {
+		// Delivered so lets delete the Start record from the Store
+		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Deleted Log with key:", key)
+	} else {
+		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.Callback_url, params.App_id, err)
+	}
+
 }

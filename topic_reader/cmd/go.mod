@@ -4,6 +4,7 @@ go 1.21.4
 
 require (
 	github.com/dapr/go-sdk v1.9.1
+	github.com/gorilla/mux v1.8.0
 	github.com/hasura/go-graphql-client v0.10.1
 )
 
