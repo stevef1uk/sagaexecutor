@@ -113,7 +113,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 	var log_entry Start_stop
 	var mymap map[string]string
 
-	log.Println("Getting stored saga log data")
+	//log.Println("Getting stored saga log data")
 	// Need to use Hasura to query Postgres table as dapr state store query is alpha and needs some off set-up
 
 	/*query := `{ "filter": {} }`
@@ -135,7 +135,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("Base64 decoded value  = %s\n", rawDecodedText)
+		//log.Printf("Base64 decoded value  = %s\n", rawDecodedText)
 
 		mymap = getMapFromString(string(rawDecodedText))
 		time_logtime := mymap["logtime"]
@@ -146,7 +146,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 			if err != nil {
 				log.Printf("Error parsing time %s\n", err)
 			}
-			log.Printf("parsed time = %v\n", log_entry.LogTime)
+			//log.Printf("parsed time = %v\n", log_entry.LogTime)
 		}
 
 		log_entry.App_id = mymap["app_id"]
@@ -158,7 +158,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		var tmp_b []byte = make([]byte, len(mymap["params"]))
 		_, _ = b64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
 		log_entry.Params = string(tmp_b)
-		log.Printf("Log Entry reconstructed = %v\n", log_entry)
+		//log.Printf("Log Entry reconstructed = %v\n", log_entry)
 
 		elapsed := time.Since(log_entry.LogTime)
 		allowed_time := log_entry.Timeout

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	//"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +52,7 @@ func main() {
 		log.Fatalf("error adding topic subscription: %v", err)
 	}
 
-	log.Printf("Starting the server using port %s'n", appPort)
+	//log.Printf("Starting the server using port %s'n", appPort)
 	// Start the server
 	err = s.Start()
 	if err != nil && err != http.ErrServerClosed {
@@ -80,34 +81,26 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		log_m += `"timeout":` + strconv.Itoa(m.Timeout) + ","
 		log_m += `"logtime":` + s1 + "}"
 
-		log.Printf("Storing key = %s, data = %s\n", key, log_m)
+		//log.Printf("Storing key = %s, data = %s\n", key, log_m)
 
 		// Save state into the state store
 		err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
 		if err != nil {
 			log.Fatal(err)
-		} else {
-			fmt.Println("Saved Log:", string(log_m))
 		}
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
 
-		/*_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
+		_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
 		if err != nil {
 			fmt.Printf("Error can't find key! %s/n", err)
-		}*/
+		}
 
 		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("Deleted Log with key:", key)
-		/* Double check!
-		_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
-		if err == nil {
-			fmt.Println("Error: Key still exists after deletion attemp!")
-		}*/
-
+		//fmt.Println("Deleted Log with key:", key)
 	}
 
 	//client.QueryStateAlpha1()

@@ -90,9 +90,9 @@ func main() {
 	// Now lets happer this a bit
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 200; i++ {
 		token := uuid.NewString()
-		err = s.SendStart(client, "mock-client", "test2", token, "callback", "{}", 1)
+		err = s.SendStart(client, "mock-client", "test2", token, "callback", "{}", 20)
 		if err != nil {
 			log.Printf("First Publish error got %s", err)
 		}
