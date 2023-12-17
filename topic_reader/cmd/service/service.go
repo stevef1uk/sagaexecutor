@@ -22,6 +22,7 @@ const (
 	Start                   = true
 	Stop                    = false
 	layout                  = "2006-01-02 150405"
+	hasura_url              = "http://hasura.default.svc.cluster.local/v1/graphql"
 )
 
 type Start_stop struct {
@@ -42,6 +43,8 @@ type State struct {
 
 type service struct {
 }
+
+var hasura_client *graphql.Client
 
 // Written to handle input like this. I hope there is an easier way to do this?
 // input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_url":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
@@ -74,6 +77,7 @@ func getMapFromString(input string) map[string]string {
 }
 
 func NewService() Server {
+	hasura_client = graphql.NewClient(hasura_url, nil)
 	return &service{}
 }
 
@@ -166,8 +170,6 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 }
 
 func callHasura(app_id string, service string) []State {
-	url := "http://hasura.default.svc.cluster.local/v1/graphql"
-	client := graphql.NewClient(url, nil)
 
 	id := "sagasubscriber||" + app_id + service + "%"
 	query := `query MyQuery { 
@@ -182,7 +184,7 @@ func callHasura(app_id string, service string) []State {
 		SagaLogs []State `json:"state"`
 	}
 
-	raw, err := client.ExecRaw(context.Background(), query, map[string]any{})
+	raw, err := hasura_client.ExecRaw(context.Background(), query, map[string]any{})
 	if err != nil {
 		panic(err)
 	}
@@ -193,6 +195,43 @@ func callHasura(app_id string, service string) []State {
 	}
 
 	return res.SagaLogs
+}
+
+func deleteStateWithHasura(key string) {
+
+	query := `mutation MyMutation {
+				delete_state(where: {key: {_eq: ` + `"` + key + `"}})
+				{
+				  affected_rows
+		  		}
+	  }`
+
+	log.Println("query = " + query)
+	var res struct {
+		AffectedRows int `json:"affected_rows"`
+	}
+
+	raw, err := hasura_client.ExecRaw(context.Background(), query, map[string]any{})
+	if err != nil {
+		log.Printf("Error executing query\n", err)
+		panic(err)
+	}
+	err = json.Unmarshal(raw, &res)
+	if err != nil {
+		log.Printf("Error unmarshalling response from query\n", err)
+		panic(err)
+	}
+	raw, err = hasura_client.ExecRaw(context.Background(), query, map[string]any{})
+	if err != nil {
+		log.Printf("Error querying state store %s\n", err)
+	}
+
+	err = json.Unmarshal(raw, &res)
+	if err != nil {
+		log.Printf("Error querying state store %s\n", err)
+	}
+
+	return
 }
 
 func sendCallback(client dapr.Client, key string, params Start_stop) {
@@ -212,6 +251,14 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_url, "post", content)
 	if err == nil {
 		// Delivered so lets delete the Start record from the Store
+
+		deleteStateWithHasura(key)
+		fmt.Println("Deleted Log with key:", key_actual)
+	}
+
+}
+
+/*
 		err = client.DeleteState(context.Background(), stateStoreComponentName, key_actual, nil)
 		if err != nil {
 			log.Fatal(err)
@@ -220,5 +267,4 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	} else {
 		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.Callback_url, params.App_id, err)
 	}
-
-}
+*/
