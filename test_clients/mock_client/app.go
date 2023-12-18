@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 
 	dapr "github.com/dapr/go-sdk/client"
-	service "sagaexecctl.sjfisher.com/service"
+	service "github.com/stevef1uk/sagaexecutor/service"
 )
 
 var client dapr.Client
