@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	//"fmt"
 	"log"
 	"net/http"
@@ -75,7 +76,7 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		log_m := `{"app_id":` + m.App_id + ","
 		log_m += `"service":` + m.Service + ","
 		log_m += `"token":` + m.Token + ","
-		log_m += `"callback_url":` + m.Callback_url + ","
+		log_m += `"callback_service":` + m.Callback_service + ","
 		log_m += `"params":` + m.Params + ","
 		log_m += `"event": true` + ","
 		log_m += `"timeout":` + strconv.Itoa(m.Timeout) + ","
@@ -117,7 +118,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 	message.App_id = m["app_id"].(string)
 	message.Service = m["service"].(string)
 	message.Token = m["token"].(string)
-	message.Callback_url = m["callback_url"].(string)
+	message.Callback_service = m["callback_service"].(string)
 	message.Params = m["params"].(string)
 	message.Timeout = int(m["timeout"].(float64))
 	message.Event = m["event"].(bool)

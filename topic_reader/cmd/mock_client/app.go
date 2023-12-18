@@ -38,7 +38,7 @@ func main() {
 	/*pp_id       string    `json:"app_id"`
 	  Service      string    `json:"service"`
 	  Token        string    `json:"token"`
-	  Callback_url string    `json:"callback_url"`
+	  callback_service string    `json:"callback_service"`
 	  Params       string    `json:"params"`
 	  Timeout      int       `json:"timeout"`
 	  Event        bool      `json:"event"`

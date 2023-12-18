@@ -27,14 +27,14 @@ const (
 )
 
 type Start_stop struct {
-	App_id       string    `json:"app_id"`
-	Service      string    `json:"service"`
-	Token        string    `json:"token"`
-	Callback_url string    `json:"callback_url"`
-	Params       string    `json:"params"`
-	Timeout      int       `json:"timeout"`
-	Event        bool      `json:"event"`
-	LogTime      time.Time `json:"logtime"`
+	App_id           string    `json:"app_id"`
+	Service          string    `json:"service"`
+	Token            string    `json:"token"`
+	Callback_service string    `json:"callback_service"`
+	Params           string    `json:"params"`
+	Timeout          int       `json:"timeout"`
+	Event            bool      `json:"event"`
+	LogTime          time.Time `json:"logtime"`
 }
 
 type State struct {
@@ -48,7 +48,7 @@ type service struct {
 var hasura_client *graphql.Client
 
 // Written to handle input like this. I hope there is an easier way to do this?
-// input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_url":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
+// input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_service":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
 func getMapFromString(input string) map[string]string {
 
 	var m map[string]string = make(map[string]string)
@@ -95,16 +95,16 @@ func postMessage(client dapr.Client, app_id string, s Start_stop) error {
 	return nil
 }
 
-func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_url string, params string, timeout int) error {
+func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_service string, params string, timeout int) error {
 	// Base64 encode params as they should be a json string
 	params = b64.StdEncoding.EncodeToString([]byte(params))
-	s1 := Start_stop{App_id: app_id, Service: service, Token: token, Callback_url: callback_url, Params: params, Timeout: timeout, Event: Start, LogTime: time.Now()}
+	s1 := Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: Start, LogTime: time.Now()}
 	return postMessage(client, app_id, s1)
 }
 
 func (service) SendStop(client dapr.Client, app_id string, service string, token string) error {
 
-	s1 := Start_stop{App_id: app_id, Service: service, Callback_url: "", Token: token, Params: "", Timeout: 0, Event: Stop}
+	s1 := Start_stop{App_id: app_id, Service: service, Callback_service: "", Token: token, Params: "", Timeout: 0, Event: Stop}
 	return postMessage(client, app_id, s1)
 }
 
@@ -154,7 +154,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		log_entry.Service = mymap["service"]
 		log_entry.Token = mymap["token"]
 		log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
-		log_entry.Callback_url = mymap["callback_url"]
+		log_entry.Callback_service = mymap["callback_service"]
 		var tmp_b []byte = make([]byte, len(mymap["params"]))
 		_, _ = b64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
 		log_entry.Params = string(tmp_b)
@@ -167,7 +167,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		log.Printf("Compared value = %v\n", allowed_time)
 
 		if time.Duration.Seconds(elapsed) > float64(allowed_time) {
-			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_url)
+			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_service)
 
 			go sendCallback(client, res_entry.Key, log_entry)
 		}
@@ -250,9 +250,9 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	key_actual := key[16:]
 
 	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key_actual, params)
-	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_url)
+	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_service)
 
-	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_url, "post", content)
+	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_service, "post", content)
 	if err == nil {
 		// Delivered so lets delete the Start record from the Store
 
@@ -269,6 +269,6 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 		}
 		fmt.Println("Deleted Log with key:", key_actual)
 	} else {
-		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.Callback_url, params.App_id, err)
+		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.callback_service, params.App_id, err)
 	}
 */

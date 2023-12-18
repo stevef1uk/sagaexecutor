@@ -9,7 +9,6 @@ spec:
   selector:
     matchLabels:
       app: server-test
-    strategy: {}
   template:
     metadata:
       annotations:

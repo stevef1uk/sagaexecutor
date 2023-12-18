@@ -9,7 +9,6 @@ spec:
   selector:
     matchLabels:
       app: mock-client
-    strategy: {}
   template:
     metadata:
       annotations:
