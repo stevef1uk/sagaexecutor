@@ -12,7 +12,7 @@ import (
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
-	service "sagaexecctl.sjfisher.com/service"
+	service "github.com/stevef1uk/sagaexecutor/service"
 )
 
 var (
