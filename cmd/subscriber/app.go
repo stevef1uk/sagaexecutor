@@ -32,6 +32,7 @@ var sub = &common.Subscription{
 }
 
 var sub_client dapr.Client
+var the_service service.Server
 
 func main() {
 	var err error
@@ -39,6 +40,8 @@ func main() {
 	if appPort == "" {
 		appPort = "7005"
 	}
+
+	the_service = service.NewService()
 
 	sub_client, err = dapr.NewClient()
 	if err != nil {
@@ -66,6 +69,8 @@ func main() {
 func storeMessage(client dapr.Client, m *service.Start_stop) error {
 	var err error
 
+	log.Printf("storeMessage m = %v\n", m)
+
 	key := m.App_id + m.Service + m.Token
 
 	// Only store Starts
@@ -82,7 +87,7 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		log_m += `"timeout":` + strconv.Itoa(m.Timeout) + ","
 		log_m += `"logtime":` + s1 + "}"
 
-		//log.Printf("Storing key = %s, data = %s\n", key, log_m)
+		log.Printf("Storing key = %s, data = %s\n", key, log_m)
 
 		// Save state into the state store
 		err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
@@ -91,20 +96,17 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		}
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
-
-		_, err = client.GetState(context.Background(), stateStoreComponentName, key, nil)
-		if err != nil {
-			fmt.Printf("Error can't find key! %s/n", err)
-		}
-
-		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		fmt.Printf("Attempting to delete state with key: %s\n", key)
+		//err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		// Sadly the DeleteState doesn't seem to be working :-(
+		err = the_service.DeleteStateEntry(key)
 		if err != nil {
 			log.Fatal(err)
 		}
-		//fmt.Println("Deleted Log with key:", key)
+		fmt.Printf("Deleted Log with key %s\n", key)
 	}
 
-	//client.QueryStateAlpha1()
+	log.Printf("exit storeMessage\n")
 	return err
 }
 
@@ -113,7 +115,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 
 	var m map[string]interface{} = e.Data.(map[string]interface{})
 
-	fmt.Println("Subscriber received:", e.Data)
+	fmt.Println("eventHandler received:", e.Data)
 
 	message.App_id = m["app_id"].(string)
 	message.Service = m["service"].(string)
@@ -124,7 +126,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 	message.Event = m["event"].(bool)
 	message.LogTime, _ = time.Parse(time.RFC3339Nano, m["logtime"].(string))
 
-	fmt.Println("Message created", message)
+	fmt.Println("eventHandler: Message created %v", message)
 
 	err = storeMessage(sub_client, &message)
 	if err != nil {

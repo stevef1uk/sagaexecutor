@@ -32,5 +32,7 @@ spec:
           value: "6006"
         - name: DAPR_METRICS_PORT
           value: "55215"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:Bak8xa4pfxGuREmwmxXaXNb8HWS3gPr9HPKwSMZLSyN2nDuQEAcCxeFtnxKchuUh@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
         imagePullPolicy: Always
         

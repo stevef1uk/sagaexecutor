@@ -63,36 +63,48 @@ func main() {
 
 	s = service.NewService()
 
-	log.Println("Sleepig for a bit")
-	time.Sleep(10 * time.Second)
+	log.Println("Sleeping for a bit")
+	time.Sleep(5 * time.Second)
 
 	log.Println("Finished sleeping")
 
-	err = s.SendStart(client, "mock-client", "test2", "abcdefg1234", "callback", "{}", 60)
+	err = s.SendStart(client, "mock-client", "test2", "abcdefg1234", "callback", "{}", 10)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
-		log.Println("Successfully pulished first start message")
+		log.Println("Successfully published first start message")
 	}
-	log.Println("Sleepig for a bit")
-	time.Sleep(30 * time.Second)
 
 	err = s.SendStop(client, "mock-client", "test2", "abcdefg1234")
 	if err != nil {
 		log.Printf("First Stop publish  error got %s", err)
 	} else {
-		log.Println("Successfully pulished first stop message")
+		log.Println("Successfully published first stop message")
 	}
 
+	// Check no records stored
+	log.Println("Checking no records left")
 	s.GetAllLogs(client, "mock-client", "test2")
-	//s.GetAllLogs(client, "", "")
 
-	// Now lets happer this a bit
+	log.Println("Sending a Start without a Stop & waiting for the call-back")
+	err = s.SendStart(client, "mock-client", "test2", "abcdefg1235", "callback", `{"Param1":France}`, 30)
+	if err != nil {
+		log.Printf("Second Publish error got %s", err)
+	} else {
+		log.Println("Successfully published second start message")
+	}
+	// Check one record but no call back yet
+	s.GetAllLogs(client, "mock-client", "test2")
+
+	log.Println("Sleeping for a bit for the Poller to call us back ")
+	time.Sleep(60 * time.Second)
+
+	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 5; i++ {
 		token := uuid.NewString()
-		err = s.SendStart(client, "mock-client", "test2", token, "callback", "{}", 20)
+		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"Param1":Germany}`, 20)
 		if err != nil {
 			log.Printf("First Publish error got %s", err)
 		}
@@ -102,8 +114,8 @@ func main() {
 		}
 	}
 	log.Println("Finished sending starts & stops")
-	log.Println("Sleepig for a bit to allow time to receive any callbacks")
-	time.Sleep(60 * time.Second)
+	log.Println("Sleeping for quite a bit to allow time to receive any callbacks")
+	time.Sleep(120 * time.Second)
 
 	client.Close()
 

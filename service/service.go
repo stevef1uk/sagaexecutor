@@ -3,17 +3,19 @@ package service
 import (
 	"context"
 	"encoding/base64"
-	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	dapr "github.com/dapr/go-sdk/client"
-	graphql "github.com/hasura/go-graphql-client"
+	"github.com/stevef1uk/sagaexecutor/database"
 )
 
 const (
@@ -23,7 +25,6 @@ const (
 	Start                   = true
 	Stop                    = false
 	layout                  = "2006-01-02 150405"
-	hasura_url              = "http://hasura.default.svc.cluster.local/v1/graphql"
 )
 
 type Start_stop struct {
@@ -37,15 +38,10 @@ type Start_stop struct {
 	LogTime          time.Time `json:"logtime"`
 }
 
-type State struct {
-	Key   string
-	Value string
-}
-
 type service struct {
 }
 
-var hasura_client *graphql.Client
+var the_db *pgx.Conn
 
 // Written to handle input like this. I hope there is an easier way to do this?
 // input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_service":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
@@ -78,7 +74,7 @@ func getMapFromString(input string) map[string]string {
 }
 
 func NewService() Server {
-	hasura_client = graphql.NewClient(hasura_url, nil)
+	the_db = database.OpenDBConnection(os.Getenv("DATABASE_URL"))
 	return &service{}
 }
 
@@ -97,7 +93,7 @@ func postMessage(client dapr.Client, app_id string, s Start_stop) error {
 
 func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_service string, params string, timeout int) error {
 	// Base64 encode params as they should be a json string
-	params = b64.StdEncoding.EncodeToString([]byte(params))
+	params = base64.StdEncoding.EncodeToString([]byte(params))
 	s1 := Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: Start, LogTime: time.Now()}
 	return postMessage(client, app_id, s1)
 }
@@ -112,6 +108,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 	var log_entry Start_stop
 	var mymap map[string]string
+	var rawDecodedText []byte
 
 	//log.Println("Getting stored saga log data")
 	// Need to use Hasura to query Postgres table as dapr state store query is alpha and needs some off set-up
@@ -123,21 +120,31 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 	}
 	*/
 
-	ret := callHasura(app_id, service)
+	ret, err := database.GetStateRecords(context.Background(), the_db)
+	if err != nil {
+		log.Printf("Error reading state records %s", err)
+		return
+	}
 
 	log.Printf("Returned %d records\n", len(ret))
 
 	for i := 0; i < len(ret); i++ {
 		res_entry := ret[i]
-		log.Printf("Entry Key = %s\n", res_entry.Key)
+		//log.Printf("Basic record from DB: %v\n", res_entry)
+		log.Printf("Key = %s\n", res_entry.Key)
 
-		rawDecodedText, err := base64.StdEncoding.DecodeString(res_entry.Value)
+		tmp, err := strconv.Unquote(res_entry.Value)
+		if err != nil {
+			panic(err)
+		}
+		rawDecodedText, err = base64.StdEncoding.DecodeString(tmp)
 		if err != nil {
 			panic(err)
 		}
 		//log.Printf("Base64 decoded value  = %s\n", rawDecodedText)
 
 		mymap = getMapFromString(string(rawDecodedText))
+
 		time_logtime := mymap["logtime"]
 		if time_logtime != "" {
 			time_tmp := time_logtime[0:17]
@@ -155,87 +162,28 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		log_entry.Token = mymap["token"]
 		log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
 		log_entry.Callback_service = mymap["callback_service"]
-		var tmp_b []byte = make([]byte, len(mymap["params"]))
-		_, _ = b64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
+
+		tmp, err = strconv.Unquote(mymap["params"])
+		if err != nil {
+			tmp = mymap["params"]
+			log.Printf("error attempting to Unquote params %s\n", err)
+		}
+		var tmp_b []byte = make([]byte, len(tmp))
+		_, _ = base64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
 		log_entry.Params = string(tmp_b)
-		//log.Printf("Log Entry reconstructed = %v\n", log_entry)
+		log.Printf("Log Entry reconstructed = %v\n", log_entry)
 
 		elapsed := time.Since(log_entry.LogTime)
 		allowed_time := log_entry.Timeout
 
-		log.Printf("Elapsed value = %v\n", elapsed)
-		log.Printf("Compared value = %v\n", allowed_time)
+		log.Printf("Token = %s, Elapsed value = %v, Compared value = %v\n", log_entry.Token, elapsed, allowed_time)
 
 		if time.Duration.Seconds(elapsed) > float64(allowed_time) {
 			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_service)
 
-			go sendCallback(client, res_entry.Key, log_entry)
+			sendCallback(client, res_entry.Key, log_entry)
 		}
 	}
-}
-
-func callHasura(app_id string, service string) []State {
-
-	id := "sagasubscriber||" + app_id + service + "%"
-	query := `query MyQuery { 
-		      state(where: {key: {_like: ` + `"` + id + `"}}) {
-				key
-				value
-		  }
-	  }`
-
-	//log.Println("query = " + query)
-	var res struct {
-		SagaLogs []State `json:"state"`
-	}
-
-	raw, err := hasura_client.ExecRaw(context.Background(), query, map[string]any{})
-	if err != nil {
-		panic(err)
-	}
-
-	err = json.Unmarshal(raw, &res)
-	if err != nil {
-		log.Printf("Error querying state store %s\n", err)
-	}
-
-	return res.SagaLogs
-}
-
-func deleteStateWithHasura(key string) {
-
-	query := `mutation MyMutation {
-				delete_state(where: {key: {_eq: ` + `"` + key + `"}})
-				{
-				  affected_rows
-		  		}
-	  }`
-
-	//log.Println("query = " + query)
-	/* {"delete_state":{"affected_rows" : 1}} */
-	type AutoGenerated struct {
-		DeleteState struct {
-			AffectedRows int `json:"affected_rows"`
-		} `json:"delete_state"`
-	}
-	var res AutoGenerated
-
-	raw, err := hasura_client.ExecRaw(context.Background(), query, map[string]any{})
-	if err != nil {
-		log.Printf("Error executing query\n", err)
-		panic(err)
-	}
-	//log.Printf("Raw data from delete = %v/n", raw)
-	err = json.Unmarshal(raw, &res)
-	if err != nil {
-		log.Printf("Error unmarshalling response from query\n", err)
-		panic(err)
-	}
-	if res.DeleteState.AffectedRows != 1 {
-		log.Printf("Error deleted %v rows not one/n", res.DeleteState.AffectedRows)
-	}
-
-	return
 }
 
 func sendCallback(client dapr.Client, key string, params Start_stop) {
@@ -256,19 +204,15 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	if err == nil {
 		// Delivered so lets delete the Start record from the Store
 
-		deleteStateWithHasura(key)
-		fmt.Println("Deleted Log with key:", key_actual)
+		err = database.Delete(context.Background(), the_db, key)
+		if err == nil {
+			fmt.Println("Deleted Log with key:", key_actual)
+		}
 	}
 
 }
 
-/*
-		err = client.DeleteState(context.Background(), stateStoreComponentName, key_actual, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Deleted Log with key:", key_actual)
-	} else {
-		fmt.Printf("Error: unable to invoke function %s for app_id %s. Error = %s\n", params.callback_service, params.App_id, err)
-	}
-*/
+func (service) DeleteStateEntry(key string) error {
+	key_to_del := "sagasubscriber||" + key
+	return database.Delete(context.Background(), the_db, key_to_del)
+}

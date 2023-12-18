@@ -57,6 +57,20 @@ func main() {
 		log.Println("Successfully pubished a start message for later callback")
 	}
 
+	// Send a pair of Start & Stops messages so these shoud not result in a call-back
+	err = s.SendStart(client, "server-test", "test1", "abcdefgh1236", "callback", `{"steve":1}`, 20)
+	if err != nil {
+		log.Printf("Second Publish error got %s", err)
+	} else {
+		log.Println("Successfully pubished Second start message for later callback")
+	}
+	err = s.SendStop(client, "server-test", "test1", "abcdefgh1236")
+	if err != nil {
+		log.Printf("Second Publish Stop error got %s", err)
+	} else {
+		log.Println("Successfully pubished Second stop message to cancel the start")
+	}
+
 	router := mux.NewRouter()
 	log.Println("setting up handler")
 	router.HandleFunc("/callback", callback).Methods("POST", "OPTIONS")
