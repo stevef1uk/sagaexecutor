@@ -39,7 +39,7 @@ func GetStateRecords(ctx context.Context, the_db *pgx.Conn) ([]StateRecord, erro
 
 func Delete(ctx context.Context, the_db *pgx.Conn, key string) error {
 
-	log.Printf("Delete Key = %s\n", key)
+	log.Printf("DB:Delete Key = %s\n", key)
 	res, err := the_db.Exec(ctx, "DELETE FROM state WHERE key = $1;", key)
 	if err != nil {
 		return fmt.Errorf("`Delete failed for state record with key %s: %v", key, err)

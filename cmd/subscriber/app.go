@@ -87,7 +87,7 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		log_m += `"timeout":` + strconv.Itoa(m.Timeout) + ","
 		log_m += `"logtime":` + s1 + "}"
 
-		log.Printf("Storing key = %s, data = %s\n", key, log_m)
+		log.Printf("Start Storing key = %s, data = %s\n", key, log_m)
 
 		// Save state into the state store
 		err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
@@ -96,14 +96,14 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		}
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
-		fmt.Printf("Attempting to delete state with key: %s\n", key)
+		fmt.Printf("Stop so will delete state with key: %s\n", key)
 		//err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
 		// Sadly the DeleteState doesn't seem to be working :-(
 		err = the_service.DeleteStateEntry(key)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Deleted Log with key %s\n", key)
+		log.Printf("Deleted Log with key %s\n", key)
 	}
 
 	log.Printf("exit storeMessage\n")
@@ -115,7 +115,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 
 	var m map[string]interface{} = e.Data.(map[string]interface{})
 
-	fmt.Println("eventHandler received:", e.Data)
+	//fmt.Println("eventHandler received:", e.Data)
 
 	message.App_id = m["app_id"].(string)
 	message.Service = m["service"].(string)
@@ -126,7 +126,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 	message.Event = m["event"].(bool)
 	message.LogTime, _ = time.Parse(time.RFC3339Nano, m["logtime"].(string))
 
-	fmt.Println("eventHandler: Message created %v", message)
+	log.Printf("eventHandler: Message:%v\n", message)
 
 	err = storeMessage(sub_client, &message)
 	if err != nil {
