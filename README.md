@@ -1,6 +1,6 @@
-This project has been created to demonstrate the use of Dapr Building BLocks There is a soluion architecture picture and description in the README.pdf file.
-I have performed basic testing and it seems to work as I expect, however, I have not performed extensive load testing and on y litte cluster it is easy to max-out the message queues.
-An enhancemnt I would be to run one one Subscriber per Go client service deployed.
+This project has been created to demonstrate the use of Dapr Building Blocks There is a solution architecture picture and description in the README.pdf file.
+I have performed basic testing and it seems to work as I expect, however, I have not performed extensive load testing and on oy litte cluster it is easy to max-out the message queues.
+An enhancemnt would be to run one one Subscriber per Go client service deployed.
 
 There is actually very little code required:
 ```
