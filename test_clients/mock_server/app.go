@@ -62,7 +62,7 @@ func main() {
 	if err != nil {
 		log.Printf("Second Publish error got %s", err)
 	} else {
-		log.Println("Successfully pubished Second start message for later callback")
+		log.Println("Successfully pubished Second start message callback")
 	}
 	err = s.SendStop(client, "server-test", "test1", "abcdefgh1236")
 	if err != nil {
