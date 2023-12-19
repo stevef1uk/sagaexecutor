@@ -59,7 +59,7 @@ test_clients
 ```
 Before running the core Subscriber & Postgres componnets the config files in components need to be applied to the cluster e.g
 ```
-kubectl create -f components
+kubectl create -f components/.
 ```
 (the following files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
