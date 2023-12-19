@@ -67,6 +67,30 @@ First deploy & run the Subscriber & Poller components (tilt up and tilt down to 
 
 Then the test clinets can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
 
+If the mock_client is run the output should look like this:
+
+```
+apr client initializing for: 127.0.0.1:50001
+2023/12/19 14:43:15 setting up handler
+2023/12/19 14:43:15 About to send a couple of messages
+2023/12/19 14:43:15 Sleeping for a bit
+2023/12/19 14:43:20 Finished sleeping
+2023/12/19 14:43:20 Successfully published first start message
+2023/12/19 14:43:20 Successfully published first stop message
+2023/12/19 14:43:20 Checking no records left
+2023/12/19 14:43:20 Returned 0 records
+2023/12/19 14:43:20 Sending a Start without a Stop & waiting for the call-back
+2023/12/19 14:43:20 Successfully published second start message
+2023/12/19 14:43:20 Returned 0 records
+2023/12/19 14:43:20 Sleeping for a bit for the Poller to call us back
+Yay callback invoked!
+transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":France} 30 false 2023-12-19 14:43:20 +0000 UTC}
+2023/12/19 14:44:00 Sending a group of starts & stops
+2023/12/19 14:44:01 Finished sending starts & stops
+2023/12/19 14:44:01 Sleeping for quite a bit to allow time to receive any callbacks
+```
+
+What I have found is that if the system is loaded with too many messages unwantd call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end.
 
     
 
