@@ -95,6 +95,8 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 
 What I have found is that if the system is loaded with too many messages unwanted call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end and the State Store is not deleting the Start records from the store quickly enough so that under load the  separate Poller process is still finding them in the DB. 
 
+Ideally, I wouldn't have mixed using the Dapr Statestore and Postgres calls directly to a table owned by Dapr. This was done because the Subscriber & Poller can't access the same State entries other than using Postgres. A simpler solution if the State Store has this understandable constraint is to create a new table for Saga and just use Postgres. 
+
     
 
 
