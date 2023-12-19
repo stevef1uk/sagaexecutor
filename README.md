@@ -63,7 +63,7 @@ kubectl create -f components/.
 ```
 (the following files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
-First deploy & run the Subscriber & Poller components (tilt up or kubectl create -f deploymnets/kubernetes.yaml)
+First deploy & run the Subscriber & Poller components (tilt up and tilt down to undeploy)
 
 Then the test clinets can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
 
