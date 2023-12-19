@@ -68,47 +68,16 @@ func main() {
 
 	log.Println("Finished sleeping")
 
-	err = s.SendStart(client, "mock-client", "test2", "abcdefg1234", "callback", "{}", 10)
-	if err != nil {
-		log.Printf("First Publish error got %s", err)
-	} else {
-		log.Println("Successfully published first start message")
-	}
-
-	err = s.SendStop(client, "mock-client", "test2", "abcdefg1234")
-	if err != nil {
-		log.Printf("First Stop publish  error got %s", err)
-	} else {
-		log.Println("Successfully published first stop message")
-	}
-
-	// Check no records stored
-	log.Println("Checking no records left")
-	s.GetAllLogs(client, "mock-client", "test2")
-
-	log.Println("Sending a Start without a Stop & waiting for the call-back")
-	err = s.SendStart(client, "mock-client", "test2", "abcdefg1235", "callback", `{"Param1":France}`, 30)
-	if err != nil {
-		log.Printf("Second Publish error got %s", err)
-	} else {
-		log.Println("Successfully published second start message")
-	}
-	// Check one record but no call back yet
-	s.GetAllLogs(client, "mock-client", "test2")
-
-	log.Println("Sleeping for a bit for the Poller to call us back ")
-	time.Sleep(40 * time.Second)
-
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 500; i++ {
 		token := uuid.NewString()
-		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"Param1":Germany}`, 20)
+		err = s.SendStart(client, "mock-client2", "test3", token, "callback", `{"Param1":Poland}`, 20)
 		if err != nil {
 			log.Printf("First Publish error got %s", err)
 		}
-		err = s.SendStop(client, "mock-client", "test2", token)
+		err = s.SendStop(client, "mock-client2", "test3", token)
 		if err != nil {
 			log.Printf("First Stop publish  error got %s", err)
 		}
