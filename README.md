@@ -65,7 +65,7 @@ kubectl create -f components/.
 
 First deploy & run the Subscriber & Poller components (tilt up and tilt down to undeploy)
 
-Then the test clinets can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
+Then the test clients can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
 
 If the mock_client is run the output should look like this:
 
