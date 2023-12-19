@@ -20,7 +20,7 @@ To get started with running this proejct, there are some prerequisites:
 
 1. A kubernetes cluster is required
 2. Redis & Postgres must be installed on the cluster
-3. Tilt is is used to deply the components (see: https://tilt.dev)
+3. Tilt is is used to deply the components (see: https://tilt.dev). However, manual deploymenet is possible.
 
 I used a personal hosted k3s cluster running on RPi4s, with k3s depolyed, this seesm fairly solid but a Cloud SaaS version is expected to be used for real use cases of this software.
 
@@ -63,7 +63,7 @@ kubectl create -f components
 ```
 (the followig files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
-First deploy & run the Subscriber & Poller components (tilt up)
+First deploy & run the Subscriber & Poller components (tilt up or kubectl create -f deploymnets/kubernetes.yaml)
 
 Then the test clinets can be run (mock_server & mock_client) to see the components run (again tilt up)
 
