@@ -90,8 +90,7 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 2023/12/19 14:44:01 Sleeping for quite a bit to allow time to receive any callbacks
 ```
 
-What I have found is that if the system is loaded with too many messages unwanted call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end.
-As the Subscribr falls behind the Poller discovers Start messages that have timeout and not been deleted so it initiates the call-back. 
+What I have found is that if the system is loaded with too many messages unwanted call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end and the State Store is nnot deleting the Start records from the store quickly enough so that under load the  separate Poller process is still finding them in the DB. 
 
     
 
