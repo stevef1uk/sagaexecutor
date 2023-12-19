@@ -32,7 +32,8 @@ var sub = &common.Subscription{
 }
 
 var sub_client dapr.Client
-var the_service service.Server
+
+//var the_service service.Server
 
 func main() {
 	var err error
@@ -41,7 +42,7 @@ func main() {
 		appPort = "7005"
 	}
 
-	the_service = service.NewService()
+	//the_service = service.NewService()
 
 	sub_client, err = dapr.NewClient()
 	if err != nil {
@@ -97,9 +98,8 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
 		fmt.Printf("Stop so will delete state with key: %s\n", key)
-		//err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
-		// Sadly the DeleteState doesn't seem to be working :-(
-		err = the_service.DeleteStateEntry(key)
+		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		//err = the_service.DeleteStateEntry(key)
 		if err != nil {
 			log.Fatal(err)
 		}

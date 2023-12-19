@@ -17,6 +17,7 @@ spec:
         dapr.io/app-port: "6006"
         dapr.io/config: "appconfig"
         dapr.io/enable-api-logging: "true"
+        dapr.io/log-level: "error"
       creationTimestamp: null
       labels:
         app: server-test
@@ -33,6 +34,6 @@ spec:
         - name: DAPR_METRICS_PORT
           value: "55215"
         - name: DATABASE_URL
-          value: "postgresql://postgres:Bak8xa4pfxGuREmwmxXaXNb8HWS3gPr9HPKwSMZLSyN2nDuQEAcCxeFtnxKchuUh@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
+          value:  "postgresql://postgres:hyIVUOZtWSqkfer3ZbEymXxFSYcp7biqgICHPuyEVcPuznripPwWwq9RVwuLYRB7@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
         imagePullPolicy: Always
         

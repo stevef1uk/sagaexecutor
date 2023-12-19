@@ -102,7 +102,7 @@ func main() {
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 500; i++ {
 		token := uuid.NewString()
 		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"Param1":Germany}`, 20)
 		if err != nil {

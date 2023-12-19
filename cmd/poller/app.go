@@ -46,7 +46,7 @@ func main() {
 }
 
 func sagaHandler(ctx context.Context, in *common.BindingEvent) (out []byte, err error) {
-	logger.Printf("Binding - Metadata:%v, Data:%v", in.Metadata, in.Data)
+	//logger.Printf("Binding - Metadata:%v, Data:%v", in.Metadata, in.Data)
 	log.Println("Hello I am called by cron!")
 
 	// TODO: do something with the cloud event data

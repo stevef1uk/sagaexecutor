@@ -166,7 +166,6 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		tmp, err = strconv.Unquote(mymap["params"])
 		if err != nil {
 			tmp = mymap["params"]
-			log.Printf("error attempting to Unquote params %s\n", err)
 		}
 		var tmp_b []byte = make([]byte, len(tmp))
 		_, _ = base64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
