@@ -46,7 +46,7 @@ export REDIS_PASSWORD=$(kubectl get secret --namespace default my-release-redis 
 kubectl create secret generic redis --from-literal="redis-password=$REDIS_PASSWORD"
 ```
 The structure of the projects is:
-
+```
 components
 cmd 
     poller
@@ -56,7 +56,7 @@ service
 test_clients
     mock_server
     mock_client
-
+```
 Before running the ore Subscriber & Postgres componnets the config files in componnest need to be applied to the cluster e.g
 ```
 kubectl create -f components
