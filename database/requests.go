@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 type StateRecord struct {
@@ -42,7 +42,12 @@ func Delete(ctx context.Context, the_db *pgx.Conn, key string) error {
 	log.Printf("DB:Delete Key = %s\n", key)
 	res, err := the_db.Exec(ctx, "DELETE FROM state WHERE key = $1;", key)
 	if err != nil {
-		return fmt.Errorf("`Delete failed for state record with key %s: %v", key, err)
+		if err.Error() != "conn busy" { // Should be ErrConnBusy
+			return fmt.Errorf("`Delete failed for state record with key %s: %v", key, err)
+		} else {
+			fmt.Printf("`DB Busy for delete of state record with key %s: %v\n", key, err)
+			return nil
+		}
 	}
 
 	rowsAffected := res.RowsAffected()

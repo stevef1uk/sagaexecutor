@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	dapr "github.com/dapr/go-sdk/client"
+
 	"github.com/stevef1uk/sagaexecutor/database"
 )
 
@@ -196,16 +197,23 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	// remove the sagasubscriber|| string at the front added by Dapr
 	key_actual := key[16:]
 
-	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key_actual, params)
-	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_service)
+	// Need to check if deletion has happened but it is still in State cache
+	fmt.Printf("sendCallBack double checking!\n")
+	_, err := client.GetStateWithConsistency(context.Background(), stateStoreComponentName, key_actual, nil, dapr.StateConsistencyStrong)
+	if err != nil {
+		fmt.Printf("sendCallBack NOT being invoked with key %s as deletion cached \n", key_actual)
+	} else {
+		fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key_actual, params)
+		fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_service)
 
-	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_service, "post", content)
-	if err == nil {
-		// Delivered so lets delete the Start record from the Store
-
-		err = database.Delete(context.Background(), the_db, key)
+		_, err = client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_service, "post", content)
 		if err == nil {
-			fmt.Println("Deleted Log with key:", key_actual)
+			// Delivered so lets delete the Start record from the Store
+
+			err = database.Delete(context.Background(), the_db, key)
+			if err == nil {
+				fmt.Println("Deleted Log with key:", key_actual)
+			}
 		}
 	}
 

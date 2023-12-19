@@ -33,3 +33,8 @@ spec:
           value: "7005"
         - name: DAPR_METRICS_PORT
           value: "55215"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-url
+              key: postgres-url
