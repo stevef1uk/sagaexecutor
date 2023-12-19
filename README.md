@@ -61,11 +61,11 @@ Before running the core Subscriber & Postgres componnets the config files in com
 ```
 kubectl create -f components
 ```
-(the followig files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
+(the following files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
 First deploy & run the Subscriber & Poller components (tilt up or kubectl create -f deploymnets/kubernetes.yaml)
 
-Then the test clinets can be run (mock_server & mock_client) to see the components run (again tilt up)
+Then the test clinets can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
 
 
     
