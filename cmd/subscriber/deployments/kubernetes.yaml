@@ -33,4 +33,3 @@ spec:
           value: "7005"
         - name: DAPR_METRICS_PORT
           value: "55215"
-        imagePullPolicy: Always

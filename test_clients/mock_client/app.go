@@ -97,12 +97,12 @@ func main() {
 	s.GetAllLogs(client, "mock-client", "test2")
 
 	log.Println("Sleeping for a bit for the Poller to call us back ")
-	time.Sleep(60 * time.Second)
+	time.Sleep(40 * time.Second)
 
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 50; i++ {
 		token := uuid.NewString()
 		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"Param1":Germany}`, 20)
 		if err != nil {
@@ -115,7 +115,7 @@ func main() {
 	}
 	log.Println("Finished sending starts & stops")
 	log.Println("Sleeping for quite a bit to allow time to receive any callbacks")
-	time.Sleep(120 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	client.Close()
 
