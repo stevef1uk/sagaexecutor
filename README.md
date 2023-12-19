@@ -91,6 +91,7 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 ```
 
 What I have found is that if the system is loaded with too many messages unwanted call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end.
+As the Subscribr falls behind the Poller discovers Start messages that have timeout and not been deleted so it initiates the call-back. 
 
     
 
