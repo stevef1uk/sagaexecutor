@@ -3,7 +3,7 @@ I have performed basic testing and it seems to work as I expect, however, I have
 An enhancemnt I would be to run one one Subscriber per Go client service deployed.
 
 There is actually very little code required:
-
+```
 % gocloc *          
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
@@ -14,7 +14,7 @@ Makefile                         4              1              0             25
 -------------------------------------------------------------------------------
 TOTAL                           22            152             61            811
 -------------------------------------------------------------------------------
-
+```
 
 To get started with running this proejct, there are some prerequisites:
 
@@ -29,22 +29,22 @@ To install Postgres on my home cluster I used the Postgres Operator, which confi
 As I am using an arm system I needed to change the image being deployed: Change: image: registry.opensource.zalan.do/acid/postgres-operator:v1.10.1 in manifests/postgres-operator.yaml to: ghcr.io/zalando/postgres-operator:v1.10.1
 
 Then I created a DB for this project, which I called hasura - on mac/Linux):
-
+```
   export POSTGRES=$(kubectl get secret postgres.acid-minimal-cluster.credentials.postgresql.acid.zalan.do -n postgres -o 'jsonpath={.data.password}' | base64 -d)
   kubectl port-forward acid-minimal-cluster-0 -n postgres 5432:5432
   psql --host localhost --username postgres
   create database hasura with owner postgres;
-
+```
 The postgres password is required to create a kubernetes secret as the deploymnet manifests expect this e.g
-
+```
 create secret generic postgres-url --from-literal="postgres-url=postgresql://postgres:$POSTGRES@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
-
+```
 To install Redis I used this Helm script: 
-
+```
 helm install my-release oci://registry-1.docker.io/bitnamicharts/redis
 export REDIS_PASSWORD=$(kubectl get secret --namespace default my-release-redis -o jsonpath="{.data.redis-password}" | base64 -d)
 kubectl create secret generic redis --from-literal="redis-password=$REDIS_PASSWORD"
-
+```
 The structure of the projects is:
 
 components
@@ -58,9 +58,9 @@ test_clients
     mock_client
 
 Before running the ore Subscriber & Postgres componnets the config files in componnest need to be applied to the cluster e.g
-
+```
 kubectl create -f components
-
+```
 (the followig files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
 First deploy & run the Subscriber & Poller components (tilt up)
