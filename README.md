@@ -57,7 +57,7 @@ test_clients
     mock_server
     mock_client
 ```
-Before running the core Subscriber & Postgres componnets the config files in componnest need to be applied to the cluster e.g
+Before running the core Subscriber & Postgres componnets the config files in components need to be applied to the cluster e.g
 ```
 kubectl create -f components
 ```
