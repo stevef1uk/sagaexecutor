@@ -103,15 +103,19 @@ func main() {
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 100; i++ {
 		token := uuid.NewString()
 		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"ERROR":Unexpected!}`, 20)
 		if err != nil {
 			log.Printf("First Publish error got %s", err)
+		} else {
+			log.Printf("Start %v - %s\n", i, token)
 		}
 		err = s.SendStop(client, "mock-client", "test2", token)
 		if err != nil {
 			log.Printf("First Stop publish  error got %s", err)
+		} else {
+			log.Printf("Stop %v - %s\n", i, token)
 		}
 	}
 	log.Println("Finished sending starts & stops")

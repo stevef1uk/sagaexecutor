@@ -20,7 +20,7 @@ spec:
         dapr.io/app-port: "7005"
         dapr.io/metrics-port: "55215"
         dapr.io/unix-domain-socket-path: ""
-        dapr.io/log-level: "debug"
+        dapr.io/log-level: "error"
     spec:
       containers:
       - name: sagapoller
