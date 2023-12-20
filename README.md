@@ -4,15 +4,16 @@ An enhancemnt would be to run one one Subscriber per Go client service deployed.
 
 There is actually very little code required:
 ```
-% gocloc *          
+gocloc .
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                               8            144             61            508
-YAML                            10              7              0            278
+Go                               9            174             78            658
+YAML                            12              7              1            339
+Markdown                         1             25              0             83
 Makefile                         4              1              0             25
 -------------------------------------------------------------------------------
-TOTAL                           22            152             61            811
+TOTAL                           26            207             79           1105
 -------------------------------------------------------------------------------
 ```
 
