@@ -34,6 +34,9 @@ Then I created a DB for this project, which I called hasura - on mac/Linux):
   kubectl port-forward acid-minimal-cluster-0 -n postgres 5432:5432
   psql --host localhost --username postgres
   create database hasura with owner postgres;
+  create table sagastate ( key text PRIMARY KEY, value jsonb );
+  GRANT ALL PRIVILEGES ON DATABASE hasura to postgres;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public to postgres;
 ```
 The postgres password is required to create a kubernetes secret as the deploymnet manifests expect this e.g
 ```
@@ -93,9 +96,11 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 2023/12/19 14:44:01 Sleeping for quite a bit to allow time to receive any callbacks
 ```
 
-What I have found is that if the system is loaded with too many messages unwanted call-backs occur. This needs some investigation, but it seems that the Dapr messaging has 'pauses' with the Redis back-end and the State Store is not deleting the Start records from the store quickly enough so that under load the  separate Poller process is still finding them in the DB. 
-
-Ideally, I wouldn't have mixed using the Dapr Statestore and Postgres calls directly to a table owned by Dapr. This was done because the Subscriber & Poller can't access the same State entries other than using Postgres. A simpler solution if the State Store has this understandable constraint is to create a new table for Saga and just use Postgres. 
+What I found from some modest load testing is that if the system is loaded with too many messages unwanted call-backs occur. 
+I investigated and found Redis messaging to be unreliable on my cluster so I switched to testig using GCP Pb/Sub with the 
+topic set to ensure message ordering as this is important for the Subscriber to work correctly. As part of this investigation
+I removed use of the Dapr Statestore and used Postgres directly having created my own table for Saga log entries as shown above.
+The Subscriber & Poller components can't access the same Dapr State entries other than using Postgres. 
 
     
 
