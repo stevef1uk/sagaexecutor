@@ -64,6 +64,10 @@ test_clients
 
 Sadly, there is a need to find the IP Address of the Master Redis Pod (my-release-redis-master-0) and update the pubsub.yaml file in Componets with this.
 
+```
+kubectl get pod <redis master pod> --template '{{.status.podIP}}'
+```
+
 Before running the core Subscriber & Postgres componnets the config files in components need to be applied to the cluster e.g
 ```
 kubectl create -f components/.
