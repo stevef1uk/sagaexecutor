@@ -21,7 +21,7 @@ var s service.Server
 
 func callback(w http.ResponseWriter, r *http.Request) {
 	var params service.Start_stop
-	fmt.Printf("Yay callback invoked!\n")
+	fmt.Printf("OOPS! callback invoked when it shouldn't be!\n")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -102,7 +102,7 @@ func main() {
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 500; i++ {
 		token := uuid.NewString()
 		err = s.SendStart(client, "mock-client", "test2", token, "callback", `{"Param1":Germany}`, 20)
 		if err != nil {

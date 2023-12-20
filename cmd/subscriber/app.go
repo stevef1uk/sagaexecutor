@@ -91,17 +91,18 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 		log.Printf("Start Storing key = %s, data = %s\n", key, log_m)
 
 		// Save state into the state store
-		err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
+		//err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
+		err = the_service.StoreStateEntry(key, []byte(log_m))
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else { // Stop means we delete the corresponding Start entry
 		// Delete state from the state store
 		fmt.Printf("Stop so will delete state with key: %s\n", key)
-		err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
+		/*err = client.DeleteState(context.Background(), stateStoreComponentName, key, nil)
 		if err != nil {
 			log.Fatal(err)
-		}
+		}*/
 		err = the_service.DeleteStateEntry(key) // Yes I really want to delete the Start record now!
 		if err != nil {
 			log.Fatal(err)

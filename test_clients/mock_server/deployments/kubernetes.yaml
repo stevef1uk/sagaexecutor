@@ -17,7 +17,7 @@ spec:
         dapr.io/app-port: "6006"
         dapr.io/config: "appconfig"
         dapr.io/enable-api-logging: "true"
-        dapr.io/log-level: "error"
+        dapr.io/log-level: "debug"
       creationTimestamp: null
       labels:
         app: server-test
@@ -38,3 +38,4 @@ spec:
             secretKeyRef:
               name: postgres-url
               key: postgres-url
+      imagePullPolicy: Always
