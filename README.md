@@ -62,7 +62,7 @@ test_clients
     mock_client
 ```
 
-Sadly, there is a need to find the IP Address of the Master Redis Pod (my-release-redis-master-0) and update the pubsub.yaml file in Componets with this.
+Sadly, there is a need to find the IP Address of the Master Redis Pod (my-release-redis-master-0) and update the pubsub.yaml file in Components with this.
 
 ```
 kubectl get pod <redis master pod> --template '{{.status.podIP}}'
