@@ -7,9 +7,9 @@ spec:
   version: v1
   metadata:
   - name: redisHost
-    value: 10.42.0.40:6379
+    value: 10.42.3.92:6379
   - name: redisPassword
     secretKeyRef:
-        name: redis
+        name: my-release-redis
         key: redis-password
     

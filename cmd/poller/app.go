@@ -38,6 +38,7 @@ func main() {
 	}
 
 	the_service = service.NewService()
+	defer the_service.CloseService()
 
 	// start the service
 	if err := s.Start(); err != nil && err != http.ErrServerClosed {

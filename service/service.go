@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	dapr "github.com/dapr/go-sdk/client"
 
@@ -42,7 +42,7 @@ type Start_stop struct {
 type service struct {
 }
 
-var the_db *pgx.Conn
+var the_db *pgxpool.Pool
 
 // Written to handle input like this. I hope there is an easier way to do this?
 // input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_service":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
@@ -79,6 +79,10 @@ func NewService() Server {
 	return &service{}
 }
 
+func (service) CloseService() {
+	the_db.Close()
+}
+
 func postMessage(client dapr.Client, app_id string, s Start_stop) error {
 	s_bytes, err := json.Marshal(s)
 	if err != nil {
@@ -111,16 +115,6 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 	var mymap map[string]string
 	var rawDecodedText []byte
 
-	//log.Println("Getting stored saga log data")
-	// Need to use Hasura to query Postgres table as dapr state store query is alpha and needs some off set-up
-
-	/*query := `{ "filter": {} }`
-	ret, err := client.QueryStateAlpha1(ctx, stateStoreComponentName, query, nil)
-	if err != nil {
-		log.Fatalf("error reading from state store: %v", err)
-	}
-	*/
-
 	ret, err := database.GetStateRecords(context.Background(), the_db)
 	if err != nil {
 		log.Printf("Error reading state records %s", err)
@@ -132,14 +126,16 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 	for i := 0; i < len(ret); i++ {
 		res_entry := ret[i]
 		//log.Printf("Basic record from DB: %v\n", res_entry)
-		log.Printf("Key = %s\n", res_entry.Key)
+		//log.Printf("Key = %s\n", res_entry.Key)
 
-		tmp, err := strconv.Unquote(res_entry.Value)
+		/*tmp, err := strconv.Unquote(res_entry.Value)
 		if err != nil {
 			panic(err)
 		}
-		rawDecodedText, err = base64.StdEncoding.DecodeString(tmp)
+		log.Printf("Called unquote ok\n")*/
+		rawDecodedText, err = base64.StdEncoding.DecodeString(res_entry.Value)
 		if err != nil {
+			log.Printf("Base64 decode failed! %s\n", err)
 			panic(err)
 		}
 		//log.Printf("Base64 decoded value  = %s\n", rawDecodedText)
@@ -164,7 +160,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 		log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
 		log_entry.Callback_service = mymap["callback_service"]
 
-		tmp, err = strconv.Unquote(mymap["params"])
+		tmp, err := strconv.Unquote(mymap["params"])
 		if err != nil {
 			tmp = mymap["params"]
 		}
@@ -195,31 +191,25 @@ func sendCallback(client dapr.Client, key string, params Start_stop) {
 	}
 
 	// remove the sagasubscriber|| string at the front added by Dapr
-	key_actual := key[16:]
 
-	// Need to check if deletion has happened but it is still in State cache
-	fmt.Printf("sendCallBack double checking!\n")
-	_, err := client.GetStateWithConsistency(context.Background(), stateStoreComponentName, key_actual, nil, dapr.StateConsistencyStrong)
-	if err != nil {
-		fmt.Printf("sendCallBack NOT being invoked with key %s as deletion cached \n", key_actual)
-	} else {
-		fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key_actual, params)
-		fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_service)
+	fmt.Printf("sendCallBack invoked with key %s, params = %v\n", key, params)
+	fmt.Printf("sendCallBack App_ID = %s, Method = %s\n", params.App_id, params.Callback_service)
 
-		_, err = client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_service, "post", content)
+	_, err := client.InvokeMethodWithContent(context.Background(), params.App_id, params.Callback_service, "post", content)
+	if err == nil {
+		// Delivered so lets delete the Start record from the Store
+
+		err = database.Delete(context.Background(), the_db, key)
 		if err == nil {
-			// Delivered so lets delete the Start record from the Store
-
-			err = database.Delete(context.Background(), the_db, key)
-			if err == nil {
-				fmt.Println("Deleted Log with key:", key_actual)
-			}
+			fmt.Println("Deleted Log with key:", key)
 		}
 	}
-
 }
 
 func (service) DeleteStateEntry(key string) error {
-	key_to_del := "sagasubscriber||" + key
-	return database.Delete(context.Background(), the_db, key_to_del)
+	return database.Delete(context.Background(), the_db, key)
+}
+
+func (service) StoreStateEntry(key string, value []byte) error {
+	return database.StoreState(context.Background(), the_db, key, value)
 }
