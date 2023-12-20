@@ -46,6 +46,8 @@ func main() {
 	defer client.Close()
 
 	s = service.NewService()
+	defer s.CloseService()
+
 	log.Println("Sleeping for a bit")
 	time.Sleep(10 * time.Second)
 

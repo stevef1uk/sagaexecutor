@@ -43,12 +43,12 @@ func main() {
 	}
 
 	the_service = service.NewService()
+	defer the_service.CloseService()
 
 	sub_client, err = dapr.NewClient()
 	if err != nil {
 		panic(err)
 	}
-	//defer sub_client.Close()
 
 	// Create the new server on appPort and add a topic listener
 	s := daprd.NewService(":" + appPort)

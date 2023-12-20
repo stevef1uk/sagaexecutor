@@ -125,7 +125,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 	for i := 0; i < len(ret); i++ {
 		res_entry := ret[i]
-		log.Printf("Basic record from DB: %v\n", res_entry)
+		//log.Printf("Basic record from DB: %v\n", res_entry)
 		//log.Printf("Key = %s\n", res_entry.Key)
 
 		/*tmp, err := strconv.Unquote(res_entry.Value)

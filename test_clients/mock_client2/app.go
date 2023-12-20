@@ -21,14 +21,14 @@ var s service.Server
 
 func callback(w http.ResponseWriter, r *http.Request) {
 	var params service.Start_stop
-	fmt.Printf("Yay callback invoked!\n")
+	fmt.Printf("Callback invoked!\n")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	json.NewDecoder(r.Body).Decode(&params)
 
 	// Here do what is necessary to recover this transaction)
-	fmt.Printf("transaction callback invoked %v\n\n", params)
+	fmt.Printf("OOPS! transaction callback invoked %v\n\n", params)
 	json.NewEncoder(w).Encode("ok")
 }
 
@@ -62,6 +62,7 @@ func main() {
 	}
 
 	s = service.NewService()
+	defer s.CloseService()
 
 	log.Println("Sleeping for a bit")
 	time.Sleep(5 * time.Second)
@@ -71,9 +72,9 @@ func main() {
 	// Now lets test some load
 
 	log.Println("Sending a group of starts & stops")
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 100; i++ {
 		token := uuid.NewString()
-		err = s.SendStart(client, "mock-client2", "test3", token, "callback", `{"Param1":Poland}`, 20)
+		err = s.SendStart(client, "mock-client2", "test3", token, "callback", `{"UNEXPECTED":ERROR}`, 20)
 		if err != nil {
 			log.Printf("First Publish error got %s", err)
 		}

@@ -71,6 +71,7 @@ func Delete(ctx context.Context, the_db *pgxpool.Pool, key string) error {
 	retries := 0
 
 	log.Printf("DB:Delete Key = %s\n", key)
+	tx, err := the_db.Begin(ctx)
 	for retries < max_reties {
 		res, err := the_db.Exec(ctx, "DELETE FROM sagastate WHERE key = $1;", key)
 		if err != nil {
@@ -87,10 +88,15 @@ func Delete(ctx context.Context, the_db *pgxpool.Pool, key string) error {
 			if rowsAffected > 1 {
 				log.Printf("Wrong number of records deleted %v \n", rowsAffected)
 			}
+			err = tx.Commit(ctx)
+			if err != nil {
+				log.Printf("DB Commit failed %s\n", err)
+			}
 			break
 		}
 	}
 	if retries == max_reties {
+		_ = tx.Rollback(ctx)
 		return fmt.Errorf("DB remained busy for too long on delete for key = %s: err %s \n", key, err)
 	}
 
@@ -105,6 +111,7 @@ func StoreState(ctx context.Context, the_db *pgxpool.Pool, key string, value []b
 
 	retries := 0
 	log.Printf("DB:Store Key = %s\n", key)
+	tx, err := the_db.Begin(ctx)
 	for retries < max_reties {
 		res, err := the_db.Exec(ctx, `INSERT INTO sagastate (key, value) values ($1, $2)`, &key, &str)
 		if err != nil {
@@ -120,12 +127,18 @@ func StoreState(ctx context.Context, the_db *pgxpool.Pool, key string, value []b
 
 			if rowsAffected != 1 {
 				log.Printf("Wrong number of records for insert %v \n", rowsAffected)
+			} else {
+				err = tx.Commit(ctx)
+				if err != nil {
+					log.Printf("DB Commit failed %s\n", err)
+				}
 			}
 			break
 		}
 	}
 
 	if retries == max_reties {
+		_ = tx.Rollback(ctx)
 		return fmt.Errorf("DB remained busy for too long on insert for key %s: err %s \n", key, err)
 	}
 
