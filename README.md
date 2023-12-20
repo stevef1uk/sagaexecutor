@@ -102,10 +102,61 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 ```
 
 What I found from some modest load testing is that if the system is loaded with too many messages unwanted call-backs occur. 
-I investigated and found Redis messaging to be unreliable on my cluster so I switched to testig using GCP Pb/Sub with the 
+I investigated and found Redis messaging to be unreliable on my cluster so I switched to testing using GCP Pb/Sub with the 
 topic set to ensure message ordering as this is important for the Subscriber to work correctly. As part of this investigation
 I removed use of the Dapr Statestore and used Postgres directly having created my own table for Saga log entries as shown above.
 The Subscriber & Poller components can't access the same Dapr State entries other than using Postgres. 
+
+My pubsub.yaml for GCP is as below:
+```
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: sagatxs
+spec:
+  type: pubsub.gcp.pubsub
+  version: v1
+  metadata:
+  - name: topic
+    value: "saxalogs"
+  - name: subscription
+    value: "subscription1"
+  - name: type
+    value: service_account
+  - name: projectId
+    value: <YOur GCP Project ID> 
+  - name: identityProjectId
+  - name: privateKeyId
+    value: <Service Account Provate Key Id>
+  - name: clientEmail
+    value: <id>-compute@developer.gserviceaccount.com
+  - name: clientId
+    value: <Your Client Id> 
+  - name: authUri
+    value: https://accounts.google.com/o/oauth2/auth
+  - name: tokenUri
+    value: https://oauth2.googleapis.com/token
+  - name: authProviderX509CertUrl
+    value: https://www.googleapis.com/oauth2/v1/certs
+  - name: clientX509CertUrl
+    value: https://www.googleapis.com/robot/v1/metadata/x509/<PROJECT_NAME>.iam.gserviceaccount.com #replace PROJECT_NAME
+  - name: privateKey
+    value: "-----BEGIN PRIVATE KEY-----  <Insert Your Key Here> -----END PRIVATE KEY-----"
+  - name: disableEntityManagement
+    value: "false"
+  - name: enableMessageOrdering
+    value: "true"  
+  - name: maxReconnectionAttempts # Optional
+    value: 30
+  - name: connectionRecoveryInSec # Optional
+    value: 2
+  - name: deadLetterTopic # Optional
+    value: myapp_dlq
+  - name: maxDeliveryAttempts # Optional
+    value: 5
+```
+
+
 
     
 
