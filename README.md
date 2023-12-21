@@ -158,7 +158,7 @@ spec:
 
 
 It is possible to run the Subscriber & Poller is a seperate naespace, say saga, by deploying the component yaml files to it and deploying 
-these components to it (tilt has a --namespace=saga flag). Then the comsuming service needs to have te namespace added to the app_id parameter e.g.:
+these components to it (tilt has a --namespace=saga flag). Then the consuming service needs to have te namespace added to the app_id parameter e.g.:
 ```
 err = s.SendStart(client, "server-test.default", "test1", "abcdefgh1235", "callback", `{"fred":1}`, 20)
 ```
