@@ -8,12 +8,12 @@ gocloc .
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                               9            174             78            658
-YAML                            12              7              1            339
-Markdown                         1             25              0             83
+Go                              10            179             73            693
+YAML                            13              9              1            384
+Markdown                         1             29              0            146
 Makefile                         4              1              0             25
 -------------------------------------------------------------------------------
-TOTAL                           26            207             79           1105
+TOTAL                           28            218             74           1248
 -------------------------------------------------------------------------------
 ```
 
@@ -145,7 +145,7 @@ spec:
   - name: disableEntityManagement
     value: "false"
   - name: enableMessageOrdering
-    value: "true"  
+    value: "OrderingKey"  
   - name: maxReconnectionAttempts # Optional
     value: 30
   - name: connectionRecoveryInSec # Optional
