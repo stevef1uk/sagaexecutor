@@ -7,72 +7,31 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	dapr "github.com/dapr/go-sdk/client"
 
 	"github.com/stevef1uk/sagaexecutor/database"
+	"github.com/stevef1uk/sagaexecutor/utility"
 )
 
 const (
 	PubsubComponentName     = "sagatxs"
 	PubsubTopic             = "sagalogs"
 	stateStoreComponentName = "sagalogs"
-	Start                   = true
-	Stop                    = false
-	layout                  = "2006-01-02 150405"
 )
 
-type Start_stop struct {
-	App_id           string    `json:"app_id"`
-	Service          string    `json:"service"`
-	Token            string    `json:"token"`
-	Callback_service string    `json:"callback_service"`
-	Params           string    `json:"params"`
-	Timeout          int       `json:"timeout"`
-	Event            bool      `json:"event"`
-	LogTime          time.Time `json:"logtime"`
-}
+type Start_stop = utility.Start_stop
 
-type service struct {
+type service struct { // Needed don't delete
 }
 
 var the_db *pgxpool.Pool
-
-// Written to handle input like this. I hope there is an easier way to do this?
-// input := `"app_id":sagatxs,"service":serv1,"token":abcdefg1235,"callback_service":localhost,"params":{},"Timeout":100,"TimeLogged":2023-12-16 13:09:05.837307312 +0000 UTC`
-func getMapFromString(input string) map[string]string {
-
-	var m map[string]string = make(map[string]string)
-	// Remove first characacter as this will be the json { othwerwise it forms part of the first key
-	input2 := strings.Replace(input[1:], `"`, ``, -1)
-	//fmt.Printf("input2: %s \n", input2)
-
-	split1 := regexp.MustCompile(",").Split(input2, -1)
-	for _, v := range split1 {
-		split2 := regexp.MustCompile(`:`).Split(v, -1)
-		//fmt.Printf("split2: %s \n", split2)
-		key := ""
-		for i, j := range split2 {
-			//fmt.Printf("j: %s \n", j)
-			if i == 0 {
-				key = j
-				//fmt.Printf("key: %s \n", key)
-				m[key] = ""
-			} else {
-				m[key] = m[key] + j
-				//fmt.Printf("m[%s] = %s \n", key, m[key])
-			}
-		}
-	}
-	//fmt.Printf("map = %v\n", m)
-	return m
-}
+var message_count int = 1
 
 func NewService() Server {
 	the_db = database.OpenDBConnection(os.Getenv("DATABASE_URL"))
@@ -83,13 +42,25 @@ func (service) CloseService() {
 	the_db.Close()
 }
 
-func postMessage(client dapr.Client, app_id string, s Start_stop) error {
+func getNextMessageOrder() string {
+	message_index := strconv.Itoa(message_count)
+	message_count++
+	return message_index
+}
+
+func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error {
 	s_bytes, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("postMessage() failed to marshall start_stop struct %v, %s", s, err)
 	}
 
-	err = client.PublishEvent(context.Background(), PubsubComponentName, PubsubTopic, s_bytes)
+	m := &utility.OrderedMessage{OrderingField: getNextMessageOrder(), Data: s_bytes}
+
+	err = client.PublishEvent(context.Background(), PubsubComponentName, PubsubTopic,
+		&pubsub.Message{
+			Data:        m.Data,
+			OrderingKey: m.OrderingField,
+		})
 	if err != nil {
 		return fmt.Errorf("sendStart() failed to publish start_stop struct %q", err)
 	}
@@ -99,58 +70,19 @@ func postMessage(client dapr.Client, app_id string, s Start_stop) error {
 func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_service string, params string, timeout int) error {
 	// Base64 encode params as they should be a json string
 	params = base64.StdEncoding.EncodeToString([]byte(params))
-	s1 := Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: Start, LogTime: time.Now()}
+	s1 := utility.Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: utility.Start, LogTime: time.Now()}
 	return postMessage(client, app_id, s1)
 }
 
 func (service) SendStop(client dapr.Client, app_id string, service string, token string) error {
 
-	s1 := Start_stop{App_id: app_id, Service: service, Callback_service: "", Token: token, Params: "", Timeout: 0, Event: Stop}
+	s1 := utility.Start_stop{App_id: app_id, Service: service, Callback_service: "", Token: token, Params: "", Timeout: 0, Event: utility.Stop}
 	return postMessage(client, app_id, s1)
-}
-
-
-func processRecord(input database.StateRecord) Start_stop {
-	var log_entry Start_stop
-	var mymap map[string]string
-	var rawDecodedText []byte
-
-	rawDecodedText, err := base64.StdEncoding.DecodeString(input.Value)
-	if err != nil {
-		log.Printf("Base64 decode failed! %s\n", err)
-		panic(err)
-	}
-	mymap = getMapFromString(string(rawDecodedText))
-	time_logtime := mymap["logtime"]
-	if time_logtime != "" {
-		time_tmp := time_logtime[0:17]
-		log.Printf("time_tmp = %s. time_tmp = %s\n", time_logtime, time_tmp)
-		log_entry.LogTime, err = time.Parse(layout, time_tmp)
-		if err != nil {
-			log.Printf("Error parsing time %s\n", err)
-		}
-		//log.Printf("parsed time = %v\n", log_entry.LogTime)
-	}
-	log_entry.App_id = mymap["app_id"]
-	log.Printf("App_id = %s\n", mymap["app_id"])
-	log_entry.Service = mymap["service"]
-	log_entry.Token = mymap["token"]
-	log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
-	log_entry.Callback_service = mymap["callback_service"]
-	tmp, err := strconv.Unquote(mymap["params"])
-	if err != nil {
-		tmp = mymap["params"]
-	}
-	var tmp_b []byte = make([]byte, len(tmp))
-	_, _ = base64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
-	log_entry.Params = string(tmp_b)
-	log.Printf("Log Entry reconstructed = %v\n", log_entry)
-	return log_entry
 }
 
 func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
-	var log_entry Start_stop
+	var log_entry utility.Start_stop
 
 	ret, err := database.GetStateRecords(context.Background(), the_db)
 	if err != nil {
@@ -162,7 +94,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 	for i := 0; i < len(ret); i++ {
 		res_entry := ret[i]
-		log_entry = processRecord(res_entry)
+		log_entry = utility.ProcessRecord(res_entry, false)
 
 		elapsed := time.Since(log_entry.LogTime)
 		allowed_time := log_entry.Timeout
@@ -177,7 +109,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 	}
 }
 
-func sendCallback(client dapr.Client, key string, params Start_stop) {
+func sendCallback(client dapr.Client, key string, params utility.Start_stop) {
 
 	data, _ := json.Marshal(params)
 	content := &dapr.DataContent{
