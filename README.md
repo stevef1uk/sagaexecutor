@@ -41,7 +41,7 @@ Then I created a DB for this project, which I called hasura - on mac/Linux):
 ```
 The postgres password is required to create a kubernetes secret as the deploymnet manifests expect this e.g
 ```
-create secret generic postgres-url --from-literal="postgres-url=postgresql://postgres:$POSTGRES@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
+kubectl create secret generic postgres-url --from-literal="postgres-url=postgresql://postgres:$POSTGRES@acid-minimal-cluster.postgres.svc.cluster.local:5432/hasura"
 ```
 To install Redis I used this Helm script: 
 ```
