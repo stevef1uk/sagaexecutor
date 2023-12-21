@@ -109,11 +109,48 @@ func (service) SendStop(client dapr.Client, app_id string, service string, token
 	return postMessage(client, app_id, s1)
 }
 
-func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
+func processRecord(input database.StateRecord) Start_stop {
 	var log_entry Start_stop
 	var mymap map[string]string
 	var rawDecodedText []byte
+
+	rawDecodedText, err := base64.StdEncoding.DecodeString(input.Value)
+	if err != nil {
+		log.Printf("Base64 decode failed! %s\n", err)
+		panic(err)
+	}
+	mymap = getMapFromString(string(rawDecodedText))
+	time_logtime := mymap["logtime"]
+	if time_logtime != "" {
+		time_tmp := time_logtime[0:17]
+		log.Printf("time_tmp = %s. time_tmp = %s\n", time_logtime, time_tmp)
+		log_entry.LogTime, err = time.Parse(layout, time_tmp)
+		if err != nil {
+			log.Printf("Error parsing time %s\n", err)
+		}
+		//log.Printf("parsed time = %v\n", log_entry.LogTime)
+	}
+	log_entry.App_id = mymap["app_id"]
+	log.Printf("App_id = %s\n", mymap["app_id"])
+	log_entry.Service = mymap["service"]
+	log_entry.Token = mymap["token"]
+	log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
+	log_entry.Callback_service = mymap["callback_service"]
+	tmp, err := strconv.Unquote(mymap["params"])
+	if err != nil {
+		tmp = mymap["params"]
+	}
+	var tmp_b []byte = make([]byte, len(tmp))
+	_, _ = base64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
+	log_entry.Params = string(tmp_b)
+	log.Printf("Log Entry reconstructed = %v\n", log_entry)
+	return log_entry
+}
+
+func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
+
+	var log_entry Start_stop
 
 	ret, err := database.GetStateRecords(context.Background(), the_db)
 	if err != nil {
@@ -125,49 +162,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 	for i := 0; i < len(ret); i++ {
 		res_entry := ret[i]
-		//log.Printf("Basic record from DB: %v\n", res_entry)
-		//log.Printf("Key = %s\n", res_entry.Key)
-
-		/*tmp, err := strconv.Unquote(res_entry.Value)
-		if err != nil {
-			panic(err)
-		}
-		log.Printf("Called unquote ok\n")*/
-		rawDecodedText, err = base64.StdEncoding.DecodeString(res_entry.Value)
-		if err != nil {
-			log.Printf("Base64 decode failed! %s\n", err)
-			panic(err)
-		}
-		//log.Printf("Base64 decoded value  = %s\n", rawDecodedText)
-
-		mymap = getMapFromString(string(rawDecodedText))
-
-		time_logtime := mymap["logtime"]
-		if time_logtime != "" {
-			time_tmp := time_logtime[0:17]
-			log.Printf("time_tmp = %s. time_tmp = %s\n", time_logtime, time_tmp)
-			log_entry.LogTime, err = time.Parse(layout, time_tmp)
-			if err != nil {
-				log.Printf("Error parsing time %s\n", err)
-			}
-			//log.Printf("parsed time = %v\n", log_entry.LogTime)
-		}
-
-		log_entry.App_id = mymap["app_id"]
-		log.Printf("App_id = %s\n", mymap["app_id"])
-		log_entry.Service = mymap["service"]
-		log_entry.Token = mymap["token"]
-		log_entry.Timeout, _ = strconv.Atoi(mymap["timeout"])
-		log_entry.Callback_service = mymap["callback_service"]
-
-		tmp, err := strconv.Unquote(mymap["params"])
-		if err != nil {
-			tmp = mymap["params"]
-		}
-		var tmp_b []byte = make([]byte, len(tmp))
-		_, _ = base64.StdEncoding.Decode(tmp_b, []byte(mymap["params"]))
-		log_entry.Params = string(tmp_b)
-		log.Printf("Log Entry reconstructed = %v\n", log_entry)
+		log_entry = processRecord(res_entry)
 
 		elapsed := time.Since(log_entry.LogTime)
 		allowed_time := log_entry.Timeout
