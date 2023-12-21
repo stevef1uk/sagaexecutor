@@ -57,6 +57,7 @@ cmd
     subscriber
 database
 service
+utility
 test_clients
     mock_server
     mock_client
