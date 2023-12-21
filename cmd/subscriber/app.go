@@ -15,14 +15,16 @@ import (
 	dapr "github.com/dapr/go-sdk/client"
 	common "github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
+	"github.com/stevef1uk/sagaexecutor/database"
 	service "github.com/stevef1uk/sagaexecutor/service"
+	utility "github.com/stevef1uk/sagaexecutor/utility"
 )
 
 const stateStoreComponentName = "sagalogs"
 
 type dataElement struct {
 	Data    string             `json:"data"`
-	LogData service.Start_stop `json:"logdata"`
+	LogData utility.Start_stop `json:"logdata"`
 }
 
 var sub = &common.Subscription{
@@ -67,15 +69,15 @@ func main() {
 	sub_client.Close()
 }
 
-func storeMessage(client dapr.Client, m *service.Start_stop) error {
+func storeMessage(client dapr.Client, m *utility.Start_stop) error {
 	var err error
 
-	log.Printf("storeMessage m = %v\n", m)
+	//log.Printf("storeMessage m = %v\n", m)
 
 	key := m.App_id + m.Service + m.Token
 
 	// Only store Starts
-	if m.Event == service.Start {
+	if m.Event == utility.Start {
 		t := time.Now().UTC()
 		s1 := t.String()
 
@@ -115,20 +117,17 @@ func storeMessage(client dapr.Client, m *service.Start_stop) error {
 }
 
 func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err error) {
-	var message service.Start_stop
+
+	//fmt.Println("eventHandler received:", e.Data)
+	//fmt.Printf("type of e.Data: %s\n", reflect.TypeOf(e.Data))
 
 	var m map[string]interface{} = e.Data.(map[string]interface{})
 
-	//fmt.Println("eventHandler received:", e.Data)
+	fmt.Printf("eventHandler Ordering Key = %s\n", m["OrderingKey"].(string))
 
-	message.App_id = m["app_id"].(string)
-	message.Service = m["service"].(string)
-	message.Token = m["token"].(string)
-	message.Callback_service = m["callback_service"].(string)
-	message.Params = m["params"].(string)
-	message.Timeout = int(m["timeout"].(float64))
-	message.Event = m["event"].(bool)
-	message.LogTime, _ = time.Parse(time.RFC3339Nano, m["logtime"].(string))
+	tmp := &database.StateRecord{Key: "", Value: m["Data"].(string)}
+	message := utility.ProcessRecord(*tmp, true)
+	message.LogTime, _ = time.Parse(time.RFC3339Nano, time.Now().String())
 
 	log.Printf("eventHandler: Message:%v\n", message)
 
