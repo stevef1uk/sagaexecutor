@@ -1,5 +1,5 @@
 This project has been created to demonstrate the use of Dapr Building Blocks There is a solution architecture picture and description in the README.pdf file.
-I have performed basic testing and it seems to work as I expect, however, I have not managed to get message ordering to work if GCP Pub/Sub is configured. It works with Redis. For GCP unless the component is updated the code as it is not really usable so I will switch to usijng GCP Pub/Sub directly to fix this (see: https://cloud.google.com/pubsub/docs/publisher#go_2). 
+I have performed basic testing and it seems to work as I expect, but anyone using this should test & assess for their own needs.
 
 An enhancemnt would be to run one one Subscriber per Go client service deployed.
 
@@ -147,7 +147,9 @@ spec:
   - name: disableEntityManagement
     value: "false"
   - name: enableMessageOrdering
-    value: "OrderingKey"  
+    value: "true"
+  - name: orderingKey
+    value: "OrderingKey"
   - name: maxReconnectionAttempts # Optional
     value: 30
   - name: connectionRecoveryInSec # Optional
