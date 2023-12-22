@@ -1,6 +1,5 @@
 This project has been created to demonstrate the use of Dapr Building Blocks There is a solution architecture picture and description in the README.pdf file.
-I have performed basic testing and it seems to work as I expect, however, I have not managed to get message ordering to work so there are too many call-backs occuring. This means that the code as it is not really usable.
-I will switch to usijng GCP Pub/Sub directly to fix this (see: https://cloud.google.com/pubsub/docs/publisher#go_2). 
+I have performed basic testing and it seems to work as I expect, however, I have not managed to get message ordering to work if GCP Pub/Sub is configured. It works with Redis. For GCP unless the component is updated the code as it is not really usable so I will switch to usijng GCP Pub/Sub directly to fix this (see: https://cloud.google.com/pubsub/docs/publisher#go_2). 
 
 An enhancemnt would be to run one one Subscriber per Go client service deployed.
 
