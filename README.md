@@ -102,10 +102,6 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 2023/12/19 14:44:01 Finished sending starts & stops
 2023/12/19 14:44:01 Sleeping for quite a bit to allow time to receive any callbacks
 ```
-
-What I found from some modest load testing is that if the system is loaded with too many messages unwanted call-backs occur. 
-I investigated and found Redis messaging to be unreliable on my cluster so I switched to testing using GCP Pb/Sub with the 
-topic set to ensure message ordering as this is important for the Subscriber to work correctly. As part of this investigation
 I removed use of the Dapr Statestore and used Postgres directly having created my own table for Saga log entries as shown above.
 The Subscriber & Poller components can't access the same Dapr State entries other than using Postgres. 
 
