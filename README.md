@@ -105,7 +105,7 @@ transaction callback invoked {mock-client test2 abcdefg1235 callback {"Param1":F
 I removed use of the Dapr Statestore and used Postgres directly having created my own table for Saga log entries as shown above.
 The Subscriber & Poller components can't access the same Dapr State entries other than using Postgres. 
 
-My pubsub.yaml for GCP is as below:
+I also testing this wit the GCP Pub/Sub and the updated pubsub.yaml for GCP is as below:
 ```
 apiVersion: dapr.io/v1alpha1
 kind: Component
