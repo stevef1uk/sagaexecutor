@@ -6,6 +6,8 @@ spec:
   type: pubsub.redis
   version: v1
   metadata:
+  - name: concurrency
+    value: 1
   - name: redisHost
     value: 10.42.3.92:6379
   - name: redisPassword
