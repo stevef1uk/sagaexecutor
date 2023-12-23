@@ -20,7 +20,7 @@ TOTAL                           28            218             74           1248
 
 To get started with running this proejct, there are some prerequisites:
 
-1. A kubernetes cluster is required
+1. A kubernetes cluster is required with dapr installed (dapr init -k)
 2. Redis & Postgres must be installed on the cluster
 3. Tilt is is used to deply the components (see: https://tilt.dev). However, manual deployment is possible.
 
