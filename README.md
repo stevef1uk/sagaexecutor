@@ -184,6 +184,8 @@ scopes:
 
 The relevant items need to align to the names in the other yaml files for the auto-wiring to work.
 
+Of course one done't need to have seperate Subscribers per service client, it is possible to configure the Subscription to point to whatever Subscriber is required to be run.
+
     
 
 
