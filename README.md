@@ -162,7 +162,27 @@ these components to it (tilt has a --namespace=saga flag). Then the consuming se
 ```
 err = s.SendStart(client, "server-test.default", "test1", "abcdefgh1235", "callback", `{"fred":1}`, 20)
 ```
+To support one Subscriber per client service the dynamic subscription capabilities of Dapr have been used.
+The client service  must now pass a unique topic name when instantiating the service e.g.
+```
+s = service.NewService(myTopic)
+```
+Then there are two yaml config files required. One is the kubernetes deploymnet file for the Subscriber. This is duplicated with the name changed to be unique plus the PORT number made unique. The other one creates the actual Pub/Sub topic subscripton e.g.
+```
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: sub0
+spec:
+  topic: test-service
+  routes:
+    default: /receivemessage
+  pubsubname: sagatxs
+scopes:
+- sagasubscriber
+```
 
+The relevant items need to align to the names in the other yaml files for the auto-wiring to work.
 
     
 
