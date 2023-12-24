@@ -4,10 +4,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	//"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -29,7 +29,7 @@ type dataElement struct {
 
 var sub = &common.Subscription{
 	PubsubName: service.PubsubComponentName,
-	Topic:      service.PubsubTopic,
+	Topic:      "Dummy-Not-Used",
 	Route:      "/receivemessage",
 }
 
@@ -44,7 +44,7 @@ func main() {
 		appPort = "7005"
 	}
 
-	the_service = service.NewService()
+	the_service = service.NewService("") // Subscriber doesn't send messages to a topic just read them
 	defer the_service.CloseService()
 
 	sub_client, err = dapr.NewClient()

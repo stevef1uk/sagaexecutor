@@ -21,7 +21,6 @@ import (
 
 const (
 	PubsubComponentName     = "sagatxs"
-	PubsubTopic             = "sagalogs"
 	stateStoreComponentName = "sagalogs"
 )
 
@@ -32,9 +31,11 @@ type service struct { // Needed don't delete
 
 var the_db *pgxpool.Pool
 var message_count int = 1
+var pubsub_topic string
 
-func NewService() Server {
+func NewService(topic string) Server {
 	the_db = database.OpenDBConnection(os.Getenv("DATABASE_URL"))
+	pubsub_topic = topic
 	return &service{}
 }
 
@@ -56,7 +57,7 @@ func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error 
 
 	m := &utility.OrderedMessage{OrderingField: getNextMessageOrder(), Data: s_bytes}
 
-	err = client.PublishEvent(context.Background(), PubsubComponentName, PubsubTopic,
+	err = client.PublishEvent(context.Background(), PubsubComponentName, pubsub_topic,
 		&pubsub.Message{
 			Data:        m.Data,
 			OrderingKey: m.OrderingField,

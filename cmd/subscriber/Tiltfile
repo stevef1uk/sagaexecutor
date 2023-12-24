@@ -20,5 +20,11 @@ docker_build(
     './build',
   ])
 allow_k8s_contexts('default')
+k8s_yaml('deployments/test_service_sub.yaml')
+k8s_yaml('deployments/test_client_sub.yaml')
+k8s_yaml('deployments/test_client2_sub.yaml')
 k8s_yaml('deployments/kubernetes.yaml')
+k8s_yaml('deployments/kubernetes1.yaml')
+k8s_yaml('deployments/kubernetes2.yaml')
+
 

@@ -16,6 +16,8 @@ import (
 	service "github.com/stevef1uk/sagaexecutor/service"
 )
 
+const myTopic = "test-client"
+
 var client dapr.Client
 var s service.Server
 
@@ -61,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	s = service.NewService()
+	s = service.NewService(myTopic)
 	defer s.CloseService()
 
 	log.Println("Sleeping for a bit")

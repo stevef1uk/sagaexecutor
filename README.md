@@ -1,7 +1,7 @@
 This project has been created to demonstrate the use of Dapr Building Blocks There is a solution architecture picture and description in the README.pdf file.
 I have performed basic testing and it seems to work as I expect, but anyone using this should test & assess for their own needs.
 
-An enhancemnt would be to run one one Subscriber per Go client service deployed.
+Since the original version I have now modified this code so that each client service can have its own Subscriber listening to a dedicated topic.
 
 There is actually very little code required:
 ```
@@ -24,7 +24,7 @@ To get started with running this proejct, there are some prerequisites:
 2. Redis & Postgres must be installed on the cluster
 3. Tilt is is used to deply the components (see: https://tilt.dev). However, manual deployment is possible.
 
-I used a personal hosted k3s cluster running on RPi4s, with k3s depolyed, this seesm fairly solid but a Cloud SaaS version is expected to be used for real use cases of this software.
+I used a personal hosted k3s cluster running on RPi4s, with k3s depolyed, this seems fairly solid but a Cloud SaaS version is expected to be used for real use cases of this software.
 
 To install Postgres on my home cluster I used the Postgres Operator, which configures a HA set-up by default. See:  https://github.com/zalando/postgres-operator/tree/master
 
@@ -76,9 +76,9 @@ kubectl create -f components/.
 ```
 (the following files need to be used: : cron.yaml, observability.yaml, statestore.yaml & pubsub.yaml)
 
-First deploy & run the Subscriber & Poller components (tilt up and tilt down to undeploy)
+First deploy & run the Subscribers & Poller components (tilt up and tilt down to undeploy)
 
-Then the test clients can be run (mock_server & mock_client) to demonstrate (or see) if it is working (again tilt up)
+Then the test clients can be run (mock_server, mock_client, mock_client2) to demonstrate (or see) if it is working (again tilt up)
 
 If the mock_client is run the output should look like this:
 
