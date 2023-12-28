@@ -24,6 +24,7 @@ To get started with running this proejct, there are some prerequisites:
 2. Redis & Postgres must be installed on the cluster
 3. Tilt is is used to deply the components (see: https://tilt.dev). However, manual deployment is possible. Please note that these files
    build images for my DockerHub repo, so you will need to change these images to suitable names and then update the           deployment/kubernetes.yaml files to reference the revised image names. Also, unless your cluster is running on arm64 hardware (Mx Macs or     RPIs etc, you will need to change the GOARCH value from arm64 to say amd64 for 64-bit X86 platforms.
+4. Go installed (latest version)
 
 I used a personal hosted k3s cluster running on RPi4s, with k3s depolyed, this seems fairly solid but a Cloud SaaS version is expected to be used for real use cases of this software.
 
