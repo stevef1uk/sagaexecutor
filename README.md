@@ -37,7 +37,8 @@ Then I created a DB for this project, which I called hasura - on mac/Linux):
   kubectl port-forward acid-minimal-cluster-0 -n postgres 5432:5432
   psql --host localhost --username postgres
   create database hasura with owner postgres;
-  create table sagastate ( key text PRIMARY KEY, value jsonb );
+  \c hasura;
+  create table sagastate ( key text PRIMARY KEY, value text );
   GRANT ALL PRIVILEGES ON DATABASE hasura to postgres;
   GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public to postgres;
 ```
