@@ -63,8 +63,9 @@ func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error 
 			OrderingKey: m.OrderingField,
 		})
 	if err != nil {
-		return fmt.Errorf("sendStart() failed to publish start_stop struct %q", err)
+		return fmt.Errorf("postMessage() failed to publish start_stop struct %q", err)
 	}
+
 	return nil
 }
 
