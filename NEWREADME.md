@@ -4,9 +4,22 @@ This project has been written to demonstrate the use of Dapr Building Blocks usi
 
 ![Architecture Diagram](./img/Overview.png)
 
+There are 3 logical components of this solution:
+1. The Saga Service Code which provides an interface and is instantiated into the Calling Go Service code
+2. The Saga Subscriber 
+3. The Saga Poller
+
 The Saga components are shown in Green and the Dapr building blockes in Blue.
 
-There is actually very little code required:
+The client Go service code is linked with the Saga Service code. 
+
+This provides methods for the client service to publish Start & Stop messages to a queue managed by Dapr. This ensure that the latency to the consuming Go service is minimal.
+
+The Saga Subscriber component reads these messages and stores them in a database, the Saga Log, using a Go native Postgres driver. Originally, I used the Dapr DataStore, but this is process specific so I switched to Postgres. Only Start messages are stored and these are deleted when a Stop message is received.
+
+The Saga Poll queries the State store for Start messages that exist and for which the timeout period has elapsed. When found the client’s service call-back method recorded in the Start message is invoked. If successful the Start message in the state store is deleted to avoid a repeat of the call-back method.
+
+These components use Darp capabilities to reduce the amount of code required:
 ```
 gocloc .
 -------------------------------------------------------------------------------
@@ -34,7 +47,7 @@ dapr init --dev   # if dapr is not already running
 ./setuplocal.sh   # this creates a Postgres docker container and initialises it
 dapr run -f dapr
 ```
-This should start the two core Saga components, the Poller and the Subscriber plus the test_server example code. The output should look like this:
+This should start the two core Saga components, the Poller and the Subscriber plus the test_server example code. The output should look like this and will run until you terminate it.
 ```
 <snip>
 == APP - server-test == 2024/01/01 09:14:01 Sleeping for a bit
@@ -82,11 +95,23 @@ This should start the two core Saga components, the Poller and the Subscriber pl
 == APP - sagapoller == Deleted Log with key: server-testtest1abcdefgh1235
 == APP - sagapoller == 2024/01/01 09:14:26 Hello I am called by cron!
 == APP - sagapoller == 2024/01/01 09:14:26 Returned 0 records
-== APP - sagapoller == 2024/01/01 09:14:31 Hello I am called by cron!
-== APP - sagapoller == 2024/01/01 09:14:31 Returned 0 records
 ```
 
 ## Run in Kubernetes
 
 To run the same code in Kubernetes, 
 
+## Usage Scenarios
+
+Assume a service is having to call two other services as part of a logical transaction:
+
+![Happy Path](./img/HappyPath.png)
+
+In this case everything is ok so the Stops logged by Service A will cancel out the Starts by the Saga Subscriber. There will be nothing to recover. The Saga Scheduler will ensure that the Saga Log is empty after Service A has successfully completed both calls.
+
+
+![Unhappy Path](./img/UnhappyPath.png)
+
+In this case something has gone wrong with Service C. Assuming retries have happened and Service C is still not responding, the the Saga Poller will detect that there is an unmatched Start 2 message and after the configured timeout it will call the error call-back handler passed in the Start 2 message. This message can contain json data in addition to a GUUID token based by Service A that will enable Service A to take the appropriate error recovery. This will be service specific, but could involve reversing the change made by invoking Service B again.
+
+At the end of the recovery processing the Saga Log will be empty. The Start 2 message will remain in the Saga Log until he error handler method in Service A has been invoked.
