@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/jackc/pgx/v5/pgxpool"
+	//"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/dapr/components-contrib/bindings/postgres"
 
 	dapr "github.com/dapr/go-sdk/client"
 
@@ -29,18 +30,18 @@ type Start_stop = utility.Start_stop
 type service struct { // Needed don't delete
 }
 
-var the_db *pgxpool.Pool
+var the_db *postgres.Postgres
 var message_count int = 1
 var pubsub_topic string
 
 func NewService(topic string) Server {
-	the_db = database.OpenDBConnection(os.Getenv("DATABASE_URL"))
+	the_db, _ = database.OpenDBConnection(os.Getenv("DATABASE_URL"))
 	pubsub_topic = topic
 	return &service{}
 }
 
 func (service) CloseService() {
-	the_db.Close()
+	database.CloseDBConnection(context.Background(), the_db)
 }
 
 func getNextMessageOrder() string {

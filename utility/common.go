@@ -32,12 +32,15 @@ const (
 	ExpiryDateLayout = layout
 )
 
-func ProcessRecord(input database.StateRecord, skip_time bool) Start_stop {
+func ProcessRecord(theInput database.StateRecord, skip_time bool) Start_stop {
 	log_entry := &Start_stop{}
 	//var mymap map[string]string
 	var rawDecodedText []byte
 
-	rawDecodedText, err := base64.StdEncoding.DecodeString(input.Value)
+	t := theInput.Key
+	_ = t
+
+	rawDecodedText, err := base64.StdEncoding.DecodeString(theInput.Value)
 	if err != nil {
 		log.Printf("Base64 decode failed! %s\n", err)
 		panic(err)

@@ -5,14 +5,19 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"time"
+	"regexp"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/dapr/components-contrib/bindings"
+	"github.com/dapr/components-contrib/bindings/postgres"
 )
 
 const (
-	sleep_time = 250 * time.Millisecond
-	max_reties = 4
+	stateInsert     = "INSERT INTO sagastate (key, value) values ('%s', '%s')"
+	stateDelete     = "DELETE FROM sagastate WHERE key = '%s';"
+	stateSelect     = "SELECT key, value FROM sagastate;"
+	theRowsAffected = "rows-affected"
+	operationExec   = "exec"
+	sql             = "sql"
 )
 
 type StateRecord struct {
@@ -20,127 +25,75 @@ type StateRecord struct {
 	Value string
 }
 
-func GetStateRecords(ctx context.Context, the_db *pgxpool.Pool) ([]StateRecord, error) {
-	var err error
-	var ret []StateRecord = make([]StateRecord, 0)
-
-	retries := 0
-
-	//log.Printf("Entered GetStateRecords\n")
-	for retries < max_reties {
-		//log.Printf("Retries = %v\n", retries)
-		rows, err := the_db.Query(ctx, "SELECT key, value FROM sagastate;")
-		if err != nil {
-			//log.Printf("`Error path` = %v\n", err)
-			if err.Error() != "conn busy" { // Should be ErrConnBusy
-				return nil, fmt.Errorf("Error: Select query failed: %v", err)
-			} else {
-				log.Printf("DB Busy for select of state record: %v\n", err)
-				time.Sleep(sleep_time)
-				retries = retries + 1
-			}
-		} else {
-			// Loop through rows, using Scan to assign column data to struct fields.
-			for rows.Next() {
-				//log.Printf("Scanning a row \n")
-				var state = &StateRecord{}
-				if err := rows.Scan(&state.Key, &state.Value); err != nil {
-					return nil, fmt.Errorf("Error state query Scan: %v", err)
-				}
-				//log.Printf("Appending a row key = %s\n", state.Key)
-				ret = append(ret, *state)
-			}
-			defer rows.Close()
-			if err := rows.Err(); err != nil {
-				return nil, fmt.Errorf("Error state processing of records: %v", err)
-			}
-			break
-		}
-	}
-
-	if retries == max_reties {
-		return nil, fmt.Errorf("DB remained busy for too long on select: %s\n", err)
-	}
-
-	return ret, nil
+var req = &bindings.InvokeRequest{
+	Operation: operationExec,
+	Metadata:  map[string]string{},
 }
 
-func Delete(ctx context.Context, the_db *pgxpool.Pool, key string) error {
+func GetStateRecords(ctx context.Context, the_db *postgres.Postgres) ([]StateRecord, error) {
 	var err error
 
-	retries := 0
+	req.Operation = "query"
+	req.Metadata["sql"] = testSelect
+	res, err := the_db.Invoke(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("Error on Query %s", err)
+	}
+	log.Printf("Query res = %v\n", res)
+	ret := getTheRows(res.Data)
+	return ret, err
+}
+
+func Delete(ctx context.Context, the_db *postgres.Postgres, key string) error {
+	var err error
 
 	log.Printf("DB:Delete Key = %s\n", key)
-	tx, err := the_db.Begin(ctx)
-	for retries < max_reties {
-		res, err := the_db.Exec(ctx, "DELETE FROM sagastate WHERE key = $1;", key)
-		if err != nil {
-			if err.Error() != "conn busy" { // Should be ErrConnBusy
-				return fmt.Errorf("`Delete failed for state record with key %s: %v", key, err)
-			} else {
-				log.Printf("DB Busy for delete of state record with key %s: %v\n", key, err)
-				time.Sleep(sleep_time)
-				retries = retries + 1
-			}
-		} else {
-			rowsAffected := res.RowsAffected()
 
-			if rowsAffected > 1 {
-				log.Printf("Wrong number of records deleted %v \n", rowsAffected)
-			}
-			err = tx.Commit(ctx)
-			if err != nil {
-				log.Printf("DB Commit failed %s\n", err)
-			}
-			break
-		}
+	req.Operation = operationExec
+	req.Metadata[sql] = fmt.Sprintf(stateDelete, key)
+	res, err := the_db.Invoke(ctx, req)
+	if err != nil {
+		return fmt.Errorf("Error on delete for key %s, err %s", key, err)
 	}
-	if retries == max_reties {
-		_ = tx.Rollback(ctx)
-		return fmt.Errorf("DB remained busy for too long on delete for key = %s: err %s \n", key, err)
+	if res.Metadata[theRowsAffected] != "1" {
+		return fmt.Errorf("Error on delete row count %s for key = %s", res.Metadata[theRowsAffected], key)
+	}
+	return err
+}
+
+func StoreState(ctx context.Context, the_db *postgres.Postgres, key string, value []byte) error {
+	var err error
+
+	log.Printf("DB:Store Key = %s\n", key)
+	req.Operation = operationExec
+	req.Metadata[sql] = fmt.Sprintf(stateInsert, key, base64.StdEncoding.EncodeToString([]byte(value)))
+	res, err := the_db.Invoke(ctx, req)
+	if err != nil {
+		return fmt.Errorf("Error on insert for key %s", key, err)
+	}
+
+	log.Printf("Insert res = %v\n", res)
+	if res.Metadata[theRowsAffected] != "1" {
+		return fmt.Errorf("Error on insert row count wrong for key %s", key)
 	}
 
 	return err
 }
 
-func StoreState(ctx context.Context, the_db *pgxpool.Pool, key string, value []byte) error {
-	var err error
-
-	params := base64.StdEncoding.EncodeToString([]byte(value))
-	str := string(params)
-
-	retries := 0
-	log.Printf("DB:Store Key = %s\n", key)
-	tx, err := the_db.Begin(ctx)
-	for retries < max_reties {
-		res, err := the_db.Exec(ctx, `INSERT INTO sagastate (key, value) values ($1, $2)`, &key, &str)
-		if err != nil {
-			if err.Error() != "conn busy" { // Should be ErrConnBusy
-				return fmt.Errorf("`Insert failed for state record with key %s: %v", key, err)
-			} else {
-				log.Printf("DB Busy for insert of state record with key %s: %v\n", key, err)
-				time.Sleep(sleep_time)
-				retries = retries + 1
-			}
+// [[\"one\",\"two\"],[\"mykey\",\"eyJhcHBfaWQiOnRlc3QxLCJzZXJ2aWNlIjp0ZXN0c2VydmljZSwidG9rZW4iOmFiY2QxMjMsImNhbGxiYWNrX3NlcnZpY2UiOmR1bW15LCJwYXJhbXMiOmUzMD0sImV2ZW50IjogdHJ1ZSwidGltZW91dCI6MTAsImxvZ3RpbWUiOjIwMjQtMDEtMDMgMTU6MTI6NDEuOTQ4MDIgKzAwMDAgVVRDfQ==\"]]"
+func getTheRows(input []byte) []StateRecord {
+	var ret []StateRecord
+	re := regexp.MustCompile(`(\w+)`)
+	split1 := re.FindAllStringSubmatch(string(input), -1)
+	ret = make([]StateRecord, len(split1)/2)
+	var index = 0
+	for i, v := range split1 {
+		if ((i + 1) % 2) == 0 {
+			ret[index].Value = v[0]
+			index = index + 1
 		} else {
-			rowsAffected := res.RowsAffected()
-
-			if rowsAffected != 1 {
-				log.Printf("Wrong number of records for insert %v \n", rowsAffected)
-			} else {
-				err = tx.Commit(ctx)
-				if err != nil {
-					log.Printf("DB Commit failed %s\n", err)
-				}
-			}
-			break
+			ret[index].Key = v[0]
 		}
 	}
-
-	if retries == max_reties {
-		_ = tx.Rollback(ctx)
-		return fmt.Errorf("DB remained busy for too long on insert for key %s: err %s \n", key, err)
-	}
-
-	return err
+	return ret
 }
