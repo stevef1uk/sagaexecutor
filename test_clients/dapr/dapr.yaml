@@ -23,7 +23,7 @@ apps:
     env:
       DEBUG: true
       DATABASE_URL: postgresql://postgres:mysecretpassword@localhost:5432/hasura
-  - appID: server-test # optional
+  - appID: servertest # optional
     appDirPath: ../mock_server # REQUIRED
     appProtocol: http
     appPort: 6006

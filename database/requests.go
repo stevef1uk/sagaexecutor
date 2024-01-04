@@ -34,12 +34,11 @@ func GetStateRecords(ctx context.Context, the_db *postgres.Postgres) ([]StateRec
 	var err error
 
 	req.Operation = "query"
-	req.Metadata["sql"] = testSelect
+	req.Metadata["sql"] = stateSelect
 	res, err := the_db.Invoke(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("Error on Query %s", err)
 	}
-	log.Printf("Query res = %v\n", res)
 	ret := getTheRows(res.Data)
 	return ret, err
 }
@@ -65,16 +64,15 @@ func StoreState(ctx context.Context, the_db *postgres.Postgres, key string, valu
 	var err error
 
 	log.Printf("DB:Store Key = %s\n", key)
+	//log.Printf("DB:Store Data = %s\n", base64.URLEncoding.EncodeToString([]byte(value)))
 	req.Operation = operationExec
-	req.Metadata[sql] = fmt.Sprintf(stateInsert, key, base64.StdEncoding.EncodeToString([]byte(value)))
+	req.Metadata[sql] = fmt.Sprintf(stateInsert, key, base64.URLEncoding.EncodeToString([]byte(value)))
 	res, err := the_db.Invoke(ctx, req)
 	if err != nil {
-		return fmt.Errorf("Error on insert for key %s", key, err)
+		return fmt.Errorf("Error on insert for key %s %s", key, err)
 	}
-
-	log.Printf("Insert res = %v\n", res)
 	if res.Metadata[theRowsAffected] != "1" {
-		return fmt.Errorf("Error on insert row count wrong for key %s", key)
+		return fmt.Errorf("error on insert row count wrong for key %s", key)
 	}
 
 	return err
@@ -85,14 +83,23 @@ func getTheRows(input []byte) []StateRecord {
 	var ret []StateRecord
 	re := regexp.MustCompile(`(\w+)`)
 	split1 := re.FindAllStringSubmatch(string(input), -1)
-	ret = make([]StateRecord, len(split1)/2)
-	var index = 0
-	for i, v := range split1 {
-		if ((i + 1) % 2) == 0 {
-			ret[index].Value = v[0]
-			index = index + 1
-		} else {
-			ret[index].Key = v[0]
+	//log.Printf("split1  = %v\n", split1)
+	//log.Printf("len split1  = %v\n", len(split1))
+	size := len(split1)
+	if size > 0 {
+		l := size / 2
+		if l == 0 {
+			l = 1
+		}
+		ret = make([]StateRecord, l)
+		var index = 0
+		for i, v := range split1 {
+			if ((i + 1) % 2) == 0 {
+				ret[index].Value = v[0] + "==" // Ensure base64 data is valid
+				index = index + 1
+			} else {
+				ret[index].Key = v[0]
+			}
 		}
 	}
 	return ret

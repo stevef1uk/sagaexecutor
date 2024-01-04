@@ -37,10 +37,8 @@ func ProcessRecord(theInput database.StateRecord, skip_time bool) Start_stop {
 	//var mymap map[string]string
 	var rawDecodedText []byte
 
-	t := theInput.Key
-	_ = t
-
-	rawDecodedText, err := base64.StdEncoding.DecodeString(theInput.Value)
+	//log.Printf("ProcessRecord data to decode =%s\n", theInput.Value)
+	rawDecodedText, err := base64.URLEncoding.DecodeString(theInput.Value)
 	if err != nil {
 		log.Printf("Base64 decode failed! %s\n", err)
 		panic(err)

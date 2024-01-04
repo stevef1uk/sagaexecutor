@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	//"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/dapr/components-contrib/bindings/postgres"
 
 	dapr "github.com/dapr/go-sdk/client"
@@ -72,13 +70,12 @@ func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error 
 
 func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_service string, params string, timeout int) error {
 	// Base64 encode params as they should be a json string
-	params = base64.StdEncoding.EncodeToString([]byte(params))
+	//params = base64.URLEncoding.EncodeToString([]byte(params))
 	s1 := utility.Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: utility.Start, LogTime: time.Now()}
 	return postMessage(client, app_id, s1)
 }
 
 func (service) SendStop(client dapr.Client, app_id string, service string, token string) error {
-
 	s1 := utility.Start_stop{App_id: app_id, Service: service, Callback_service: "", Token: token, Params: "", Timeout: 0, Event: utility.Stop}
 	return postMessage(client, app_id, s1)
 }
