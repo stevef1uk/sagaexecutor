@@ -3,13 +3,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	//"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	dapr "github.com/dapr/go-sdk/client"
@@ -78,23 +78,17 @@ func storeMessage(client dapr.Client, m *utility.Start_stop) error {
 
 	// Only store Starts
 	if m.Event == utility.Start {
-		t := time.Now().UTC()
-		s1 := t.String()
+		m.LogTime = time.Now().UTC()
+		data, err := json.Marshal(m)
+		if err != nil {
+			log.Printf("storeMessage error marshalling %v, err = %s\n", m, err)
+		}
 
-		log_m := `{"app_id":` + m.App_id + ","
-		log_m += `"service":` + m.Service + ","
-		log_m += `"token":` + m.Token + ","
-		log_m += `"callback_service":` + m.Callback_service + ","
-		log_m += `"params":` + m.Params + ","
-		log_m += `"event": true` + ","
-		log_m += `"timeout":` + strconv.Itoa(m.Timeout) + ","
-		log_m += `"logtime":` + s1 + "}"
-
-		log.Printf("Start Storing key = %s, data = %s\n", key, log_m)
+		log.Printf("Start Storing key = %s, data = %s\n", key, data)
 
 		// Save state into the state store
 		//err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
-		err = the_service.StoreStateEntry(key, []byte(log_m))
+		err = the_service.StoreStateEntry(key, []byte(data))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -127,7 +121,7 @@ func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err er
 
 	tmp := &database.StateRecord{Key: "", Value: m["Data"].(string)}
 	message := utility.ProcessRecord(*tmp, true)
-	message.LogTime, _ = time.Parse(time.RFC3339Nano, time.Now().String())
+	message.LogTime, _ = time.Parse(utility.ExpiryDateLayout, time.Now().String())
 
 	log.Printf("eventHandler: Message:%v\n", message)
 
