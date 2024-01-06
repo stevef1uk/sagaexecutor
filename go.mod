@@ -59,4 +59,3 @@ require (
 	k8s.io/apimachinery v0.26.3 // indirect
 )
 
-replace github.com/stevef1uk/sagaexecutor => /Users/stevef/dev/sagaexecutor
