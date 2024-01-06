@@ -1,12 +1,11 @@
 package utility
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"log"
 	"time"
 
-	database "github.com/stevef1uk/sagaexecutor/database"
+	"github.com/stevef1uk/sagaexecutor/database"
 )
 
 type Start_stop struct {
@@ -35,18 +34,10 @@ const (
 func ProcessRecord(theInput database.StateRecord, skip_time bool) Start_stop {
 	log_entry := &Start_stop{}
 	//var mymap map[string]string
-	var rawDecodedText []byte
 
-	//log.Printf("ProcessRecord data to decode =%s\n", theInput.Value)
-	rawDecodedText, err := base64.URLEncoding.DecodeString(theInput.Value)
-	if err != nil {
-		log.Printf("Base64 decode failed! %s\n", err)
-		panic(err)
-	}
+	//log.Printf("ProcessRecord Data In = :%v\n", theInput)
 
-	log.Printf("ProcessRecord Raw Data = :%s:\n", rawDecodedText)
-
-	err = json.Unmarshal(rawDecodedText, &log_entry)
+	err := json.Unmarshal([]byte(theInput.Value), &log_entry)
 	if err != nil {
 		log.Printf("Unmarshall in ProcessRecord failed! %s\n", err)
 	}
@@ -54,6 +45,6 @@ func ProcessRecord(theInput database.StateRecord, skip_time bool) Start_stop {
 	/*var tmp_b []byte = make([]byte, len(log_entry.Params))
 	_, _ = base64.StdEncoding.Decode(tmp_b, []byte(log_entry.Params))
 	log_entry.Params = string(tmp_b)*/
-	log.Printf("Log Entry reconstructed = %v\n", log_entry)
+	//log.Printf("Log Entry reconstructed = %v\n", log_entry)
 	return *log_entry
 }

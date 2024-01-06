@@ -54,7 +54,7 @@ func main() {
 	time.Sleep(10 * time.Second)
 
 	// Now ensure that the Poller will call us back
-	err = s.SendStart(client, "servertest", "test1", "abcdefgh1235", "callback", `{"fred":1}`, 10)
+	err = s.SendStart(client, "server-test", "test1", "abcdefgh1235", "callback", `{"fred":1}`, 10)
 	if err != nil {
 		log.Printf("First Publish error got %s", err)
 	} else {
@@ -62,13 +62,13 @@ func main() {
 	}
 
 	// Send a pair of Start & Stops messages so these shoud not result in a call-back
-	err = s.SendStart(client, "servertest", "test1", "abcdefgh1236", "callback", `{"steve":1}`, 20)
+	err = s.SendStart(client, "server-test", "test1", "abcdefgh1236", "callback", `{"steve":1}`, 20)
 	if err != nil {
 		log.Printf("Second Publish error got %s", err)
 	} else {
 		log.Println("Successfully pubished Second start message callback")
 	}
-	err = s.SendStop(client, "servertest", "test1", "abcdefgh1236")
+	err = s.SendStop(client, "server-test", "test1", "abcdefgh1236")
 	if err != nil {
 		log.Printf("Second Publish Stop error got %s", err)
 	} else {

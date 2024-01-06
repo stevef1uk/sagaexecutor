@@ -2,13 +2,13 @@ package database
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 
 	"github.com/dapr/components-contrib/bindings"
 	"github.com/dapr/components-contrib/bindings/postgres"
+	"github.com/stevef1uk/sagaexecutor/encodedecode"
 )
 
 const (
@@ -30,6 +30,14 @@ var req = &bindings.InvokeRequest{
 	Metadata:  map[string]string{},
 }
 
+func (r *StateRecord) String() string {
+	data, err := json.Marshal(r)
+	if err != nil {
+		log.Printf("StateRecord error marshalling %v, err = %s\n", r, err)
+	}
+	return string(data)
+}
+
 func GetStateRecords(ctx context.Context, the_db *postgres.Postgres) ([]StateRecord, error) {
 	var err error
 
@@ -39,6 +47,7 @@ func GetStateRecords(ctx context.Context, the_db *postgres.Postgres) ([]StateRec
 	if err != nil {
 		return nil, fmt.Errorf("Error on Query %s", err)
 	}
+
 	ret := getTheRows(res.Data)
 	return ret, err
 }
@@ -64,9 +73,12 @@ func StoreState(ctx context.Context, the_db *postgres.Postgres, key string, valu
 	var err error
 
 	log.Printf("DB:Store Key = %s\n", key)
+	//log.Printf("DB:Store Value = %s\n", string(value))
 	//log.Printf("DB:Store Data = %s\n", base64.URLEncoding.EncodeToString([]byte(value)))
+	// Validate encode & decode
+
 	req.Operation = operationExec
-	req.Metadata[sql] = fmt.Sprintf(stateInsert, key, base64.URLEncoding.EncodeToString([]byte(value)))
+	req.Metadata[sql] = fmt.Sprintf(stateInsert, key, encodedecode.EncodeData(value))
 	res, err := the_db.Invoke(ctx, req)
 	if err != nil {
 		return fmt.Errorf("Error on insert for key %s %s", key, err)
@@ -81,26 +93,23 @@ func StoreState(ctx context.Context, the_db *postgres.Postgres, key string, valu
 // [[\"one\",\"two\"],[\"mykey\",\"eyJhcHBfaWQiOnRlc3QxLCJzZXJ2aWNlIjp0ZXN0c2VydmljZSwidG9rZW4iOmFiY2QxMjMsImNhbGxiYWNrX3NlcnZpY2UiOmR1bW15LCJwYXJhbXMiOmUzMD0sImV2ZW50IjogdHJ1ZSwidGltZW91dCI6MTAsImxvZ3RpbWUiOjIwMjQtMDEtMDMgMTU6MTI6NDEuOTQ4MDIgKzAwMDAgVVRDfQ==\"]]"
 func getTheRows(input []byte) []StateRecord {
 	var ret []StateRecord
-	re := regexp.MustCompile(`(\w+)`)
-	split1 := re.FindAllStringSubmatch(string(input), -1)
-	//log.Printf("split1  = %v\n", split1)
-	//log.Printf("len split1  = %v\n", len(split1))
-	size := len(split1)
-	if size > 0 {
-		l := size / 2
-		if l == 0 {
-			l = 1
-		}
-		ret = make([]StateRecord, l)
-		var index = 0
-		for i, v := range split1 {
-			if ((i + 1) % 2) == 0 {
-				ret[index].Value = v[0] + "==" // Ensure base64 data is valid
-				index = index + 1
-			} else {
-				ret[index].Key = v[0]
-			}
-		}
+
+	var decodedData [][]string
+
+	// Unmarshal the JSON string
+	err := json.Unmarshal(input, &decodedData)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return nil
 	}
+
+	ret = make([]StateRecord, len(decodedData))
+	for i := 0; i < len(decodedData); i++ {
+		ret[i].Key = decodedData[i][0]
+		ret[i].Value = decodedData[i][1]
+		//fmt.Printf("Row %d from DB = Key = %s, Value = %s\n", i, ret[i].Key, ret[i].Value)
+		ret[i].Value = encodedecode.DecodeData(ret[i].Value)
+	}
+
 	return ret
 }

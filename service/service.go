@@ -15,6 +15,7 @@ import (
 	dapr "github.com/dapr/go-sdk/client"
 
 	"github.com/stevef1uk/sagaexecutor/database"
+	"github.com/stevef1uk/sagaexecutor/encodedecode"
 	"github.com/stevef1uk/sagaexecutor/utility"
 )
 
@@ -54,6 +55,7 @@ func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error 
 		return fmt.Errorf("postMessage() failed to marshall start_stop struct %v, %s", s, err)
 	}
 
+	//encode := utility.EncodeData(s_bytes)
 	m := &utility.OrderedMessage{OrderingField: getNextMessageOrder(), Data: s_bytes}
 
 	err = client.PublishEvent(context.Background(), PubsubComponentName, pubsub_topic,
@@ -70,7 +72,7 @@ func postMessage(client dapr.Client, app_id string, s utility.Start_stop) error 
 
 func (service) SendStart(client dapr.Client, app_id string, service string, token string, callback_service string, params string, timeout int) error {
 	// Base64 encode params as they should be a json string
-	//params = base64.URLEncoding.EncodeToString([]byte(params))
+	params = encodedecode.EncodeData([]byte(params))
 	s1 := utility.Start_stop{App_id: app_id, Service: service, Token: token, Callback_service: callback_service, Params: params, Timeout: timeout, Event: utility.Start, LogTime: time.Now()}
 	return postMessage(client, app_id, s1)
 }
@@ -103,7 +105,7 @@ func (service) GetAllLogs(client dapr.Client, app_id string, service string) {
 
 		if time.Duration.Seconds(elapsed) > float64(allowed_time) {
 			log.Printf("Token %s, need to invoke callback %s\n", log_entry.Token, log_entry.Callback_service)
-
+			log_entry.Params = encodedecode.DecodeData(log_entry.Params)
 			sendCallback(client, res_entry.Key, log_entry)
 		}
 	}

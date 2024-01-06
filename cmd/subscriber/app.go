@@ -16,8 +16,9 @@ import (
 	common "github.com/dapr/go-sdk/service/common"
 	daprd "github.com/dapr/go-sdk/service/http"
 	"github.com/stevef1uk/sagaexecutor/database"
+	"github.com/stevef1uk/sagaexecutor/encodedecode"
 	service "github.com/stevef1uk/sagaexecutor/service"
-	utility "github.com/stevef1uk/sagaexecutor/utility"
+	"github.com/stevef1uk/sagaexecutor/utility"
 )
 
 const stateStoreComponentName = "sagalogs"
@@ -72,7 +73,7 @@ func main() {
 func storeMessage(client dapr.Client, m *utility.Start_stop) error {
 	var err error
 
-	//log.Printf("storeMessage m = %v\n", m)
+	log.Printf("storeMessage m = %v\n", m)
 
 	key := m.App_id + m.Service + m.Token
 
@@ -87,7 +88,6 @@ func storeMessage(client dapr.Client, m *utility.Start_stop) error {
 		log.Printf("Start Storing key = %s, data = %s\n", key, data)
 
 		// Save state into the state store
-		//err = client.SaveState(context.Background(), stateStoreComponentName, key, []byte(log_m), nil)
 		err = the_service.StoreStateEntry(key, []byte(data))
 		if err != nil {
 			log.Fatal(err)
@@ -112,14 +112,18 @@ func storeMessage(client dapr.Client, m *utility.Start_stop) error {
 
 func eventHandler(ctx context.Context, e *common.TopicEvent) (retry bool, err error) {
 
-	//fmt.Println("eventHandler received:", e.Data)
+	fmt.Printf("eventHandler received:%v\n", e.Data)
 	//fmt.Printf("type of e.Data: %s\n", reflect.TypeOf(e.Data))
+
+	//return false, err // Uncomment this to flush through queues if necessary for testing
 
 	var m map[string]interface{} = e.Data.(map[string]interface{})
 
 	fmt.Printf("eventHandler Ordering Key = %s\n", m["OrderingKey"].(string))
 
 	tmp := &database.StateRecord{Key: "", Value: m["Data"].(string)}
+	tmp.Value = encodedecode.DecodeData((tmp.Value))
+	fmt.Printf("eventHandler decoded data = %s\n", tmp.Value)
 	message := utility.ProcessRecord(*tmp, true)
 	message.LogTime, _ = time.Parse(utility.ExpiryDateLayout, time.Now().String())
 
