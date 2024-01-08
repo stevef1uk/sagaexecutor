@@ -199,7 +199,7 @@ make deploy
 make undeploy
 ```
 
-Wen using the Makefiles start the Poller first then the Subscriber before running a test client as the required dapr compoents are deployed for you in these Makefile from the components director.
+When using the Makefiles start the Poller first then the Subscriber before running a test client as the required dapr compoents are deployed for you in these Makefile from the components director.
 
 Then the test clients can be run (mock_client1, mock_client2, mock_client3) to demonstrate (or see) if it is working (again tilt up or make deploy)
 
