@@ -3,7 +3,7 @@
 # Go service details
 APP_NAME := server-test
 APP_SRC := app.go
-APP_OUTPUT := bin/$(APP_NAME)
+APP_OUTPUT := build/$(APP_NAME)
 
 # Docker details
 DOCKERFILE_PATH := deployments
