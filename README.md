@@ -189,7 +189,7 @@ kubectl create -f components/.
 
 First deploy & run the Subscribers & Poller components (tilt up and tilt down to undeploy)
 
-Whilst I used Tilt for rapid development cycles, standrd Makefiles have been provided. As before, the name of the container registry will need to be updated to your own in these. There are build & push commands for both amd64 & arm64 e.g.
+Whilst I used Tilt for rapid development cycles, standard Makefiles have been provided. As before, the name of the container registry will need to be updated to your own in these. There are build & push commands for both amd64 & arm64 e.g.
 ```
 make build-amd64-and-push 
 or
