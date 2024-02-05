@@ -104,7 +104,7 @@ This should start the two core Saga components, the Poller and the Subscriber pl
 == APP - sagapoller == 2024/01/01 09:14:26 Returned 0 records
 ```
 
-You will need to manally delete the postgres container for a full clean-up.
+You will need to manually delete the postgres container for a full clean-up.
 
 ## Run in Kubernetes
 
