@@ -9,7 +9,7 @@ There are 3 logical components of this solution:
 2. The Saga Subscriber 
 3. The Saga Poller
 
-The Saga components are shown in Green and the Dapr building blockes in Blue.
+The Saga components are shown in Green and the Dapr building blocks in Blue.
 
 The client Go service code is linked with the Saga Service code. 
 
@@ -113,7 +113,7 @@ To get started with running this proejct, there are some prerequisites:
 ### Prerequisites
 1. A kubernetes cluster is required with dapr installed (dapr init -k)
 2. Redis & Postgres must be installed on the cluster
-3. Tilt is is used to deply the components (see: https://tilt.dev). However, Makefiles are provided as well. Please note that these files
+3. Tilt is is used to deploy the components (see: https://tilt.dev). However, Makefiles are provided as well. Please note that these files
    build images for my DockerHub repo, so you will need to change these images to suitable names and then update the           deployment/kubernetes.yaml files to reference the revised image names. Also, unless your cluster is running on arm64 hardware (Mx Macs or     RPIs etc, you will need to change the GOARCH value from arm64 to say amd64 for 64-bit X86 platforms.
 4. Go installed (latest version)
 
@@ -175,7 +175,7 @@ Sadly, there is a need to find the IP Address of the Master Redis Pod (my-releas
 kubectl get pod my-release-redis-master-0  --template '{{.status.podIP}}'
 ```
 
-Also in the pubsub.yaml file it is necessary for kubernetest to delete these two lines so that publishing error's don't occur
+Also in the pubsub.yaml file it is necessary for kubernetes to delete these two lines so that publishing error's don't occur
 ```
 auth:
   secretStore: local-secret-store
@@ -191,7 +191,7 @@ First deploy & run the Subscribers & Poller components (tilt up and tilt down to
 
 Whilst I used Tilt for rapid development cycles, standard Makefiles have been provided. As before, the name of the container registry will need to be updated to your own in these. There are build & push commands for both amd64 & arm64 e.g.
 ```
-make build-amd64-and-push 
+make build-arm64-and-push 
 or
 make build-amd64-and-push
 
